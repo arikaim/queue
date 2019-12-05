@@ -14,8 +14,12 @@ use Arikaim\Core\Utils\Factory;
 use Arikaim\Core\Interfaces\Events\EventDispatcherInterface;
 use Arikaim\Core\Interfaces\Job\QueueStorageInterface;
 use Arikaim\Core\Interfaces\Job\JobInterface;
+use Arikaim\Core\Interfaces\Job\RecuringJobInterface;
+use Arikaim\Core\Interfaces\Job\ScheduledJobInterface;
+use Arikaim\Core\Interfaces\OptionsInterface;
 use Arikaim\Core\Queue\Cron;
 use Arikaim\Core\Queue\QueueWorker;
+use Arikaim\Core\System\Process;
 
 /**
  * Queue manager
@@ -37,14 +41,22 @@ class QueueManager
     protected $eventDispatcher;
 
     /**
+     * Options
+     *
+     * @var OptionsInterface
+     */
+    protected $options;
+
+    /**
      * Constructor
      *
      * @param QueueStorageInterface $driver
      */
-    public function __construct(QueueStorageInterface $driver, EventDispatcherInterface $eventDispatcher)
+    public function __construct(QueueStorageInterface $driver, EventDispatcherInterface $eventDispatcher, OptionsInterface $options)
     {       
         $this->setDriver($driver);
         $this->eventDispatcher = $eventDispatcher;
+        $this->options = $options;
     }
 
     /**
@@ -127,6 +139,17 @@ class QueueManager
     }
 
     /**
+     * Get job
+     *
+     * @param string|integer $id Job id, uiid or name
+     * @return array|false
+     */
+    public function getJob($id)
+    {
+        return $this->driver->getJob($id);    
+    }
+
+    /**
      * Get recurring jobs
      *
      * @param string|null $extension
@@ -136,38 +159,10 @@ class QueueManager
     {   
         $filter = [
             'recuring_interval' => '*',
-            'extension_name'    => $extension    
+            'extension_name'    => (empty($extension) == true) ? '*' : $extension    
         ];       
-        $jobs = $this->driver->getJobs($filter);
-        
-        return $jobs;
-    }
 
-    /**
-     * Get not scheduled or recurrnign jobs
-     *
-     * @param string $extension
-     * @param integer $status
-     * @param boolean $queryOnly
-     * @return Model|Bulder|null
-     */
-    public function getNotScheduledJobs($extension = null, $status = null, $queryOnly = true)
-    {
-        $model = Model::Jobs()->whereNull('recuring_interval')->whereNull('schedule_time'); 
-       
-        if ($extension != null) {
-            $model = $model->where('extenion_name','=',$extension); 
-        }
-        if ($status != null) {
-            $model = $model->where('status','=',$status); 
-        }
-        $model = $model->orderBy('priority','desc');
-
-        if ($queryOnly == false) {
-            $model = $model->get();
-        }
-     
-        return (is_object($model) == true) ? $model : null;
+        return $this->driver->getJobs($filter);        
     }
 
     /**
@@ -190,15 +185,17 @@ class QueueManager
     public function addJob(JobInterface $job, $extension = null)
     {       
         $info = [
-            'priority'       => $job->getPriority(),
-            'name'           => $job->getName(),
-            'handler_class'  => get_class($job),         
-            'extension_name' => (empty($extension) == true) ? $job->getExtensionName() : $extension,    
-            'status'         => 1,
-            'uuid'           => $job->getId()
+            'priority'          => $job->getPriority(),
+            'name'              => $job->getName(),
+            'handler_class'     => get_class($job),         
+            'extension_name'    => (empty($extension) == true) ? $job->getExtensionName() : $extension,    
+            'status'            => 1,
+            'recuring_interval' => ($job instanceof RecuringJobInterface) ? $job->getRecuringInterval() : null,
+            'schedule_time'     => ($job instanceof ScheduledJobInterface) ? $job->getScheduleTime() : null,
+            'uuid'              => $job->getId()
         ];
 
-        return $this->driver->addJob($job->getId(),$info);      
+        return $this->driver->addJob($info);      
     }
 
     /**
@@ -266,5 +263,21 @@ class QueueManager
         }
 
         return true;
+    }
+
+    /**
+     * Get worker process info
+     *
+     * @return array
+     */
+    public function getQueueWorkerInfo()
+    {      
+        $pid = $this->options->get('queue.worker.pid',null);
+
+        return [
+            'pid'     => $pid,
+            'command' => $this->options->get('queue.worker.command',null),
+            'running' => (empty($pid) == true) ? false : Process::isRunning($pid)
+        ];
     }
 }

@@ -166,8 +166,6 @@ class QueueWorker
     {
         Process::run('php cli queue:stop');
         sleep(2);
-        
-        return !$this->isRunning();
     }
 
     /**
@@ -212,19 +210,6 @@ class QueueWorker
         }
 
         return false;
-    }
-
-    /**
-     * Get worker process info
-     *
-     * @return array
-     */
-    public function getProcessInfo()
-    {      
-        return [
-            'pid'     => $this->options->get('queue.worker.pid',null),
-            'command' => $this->options->get('queue.worker.command',null)
-        ];
     }
 
     /**
