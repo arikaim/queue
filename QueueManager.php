@@ -17,6 +17,7 @@ use Arikaim\Core\Interfaces\Job\JobInterface;
 use Arikaim\Core\Interfaces\Job\RecuringJobInterface;
 use Arikaim\Core\Interfaces\Job\ScheduledJobInterface;
 use Arikaim\Core\Interfaces\OptionsInterface;
+use Arikaim\Core\Interfaces\QueueInterface;
 use Arikaim\Core\Queue\Cron;
 use Arikaim\Core\Queue\QueueWorker;
 use Arikaim\Core\System\Process;
@@ -24,7 +25,7 @@ use Arikaim\Core\System\Process;
 /**
  * Queue manager
  */
-class QueueManager 
+class QueueManager implements QueueInterface
 {
     /**
      * Queue storage driver
@@ -125,17 +126,39 @@ class QueueManager
     /**
      * Create job obj from jobs queue
      *
-     * @param string $name
+     * @param string|integer $name
      * @return JobInterface|false
      */
     public function create($name)
     {
-        $model = $this->findJobNyName($name);
-        if (is_object($model) == false) {
-            return false;
+        $jobInfo = $this->getJob($name);
+        
+        return ($jobInfo === false) ? false : $this->createJobFromArray($jobInfo,$jobInfo['handler_class']);    
+    }
+
+    /**
+     * Create job intence from array 
+     *
+     * @param array $data
+     * @param string|null $class
+     * @return object|null
+     */
+    public function createJobFromArray(array $data, $class = null)
+    {
+        if (empty($class) == true) {
+            $class = $data['class'];
         }
 
-        return Factory::createJobFromArray($model->toArray(),$model->handler_class);
+        $instance = Factory::createJob($class);
+        if ($instance == null) {
+            return null;
+        }
+
+        foreach ($data as $key => $value) {
+            $instance->{$key} = $value;
+        }
+
+        return $instance;
     }
 
     /**
@@ -163,6 +186,17 @@ class QueueManager
         ];       
 
         return $this->driver->getJobs($filter);        
+    }
+
+    /**
+     * Get jobs
+     *
+     * @param array $filter
+     * @return array
+     */
+    public function getJobs($filter = [])
+    {  
+        return $this->driver->getJobs($filter);   
     }
 
     /**
@@ -238,12 +272,16 @@ class QueueManager
      * Run job
      *
      * @param JobInterface|string|integer $job
-     * @return void
+     * @return boolean
      */
     public function executeJob($job)
     {
         if (is_string($job) == true || is_numeric($job) == true) {
+            $job = $this->create($job);
+        }
 
+        if (($job instanceof JobInterface) == false) {
+            return false;
         }
         // before run job event
         if ($this->eventDispatcher != null) {

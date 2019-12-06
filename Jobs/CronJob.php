@@ -53,6 +53,7 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
     public function isDue()
     {
         $date = new DateTime();
+        
         return CronExpression::factory($this->interval)->isDue('now',$date->getTimeZoneName());
     } 
 

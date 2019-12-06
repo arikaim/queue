@@ -11,7 +11,6 @@ namespace Arikaim\Core\Queue;
 
 use Arikaim\Core\System\Process;
 use Arikaim\Core\System\System;
-use Arikaim\Core\Queue\QueueManager;
 use Arikaim\Core\Interfaces\QueueInterface;
 use Arikaim\Core\Interfaces\OptionsInterface;
 
@@ -57,9 +56,9 @@ class QueueWorker
      * 
      * @param QueueInterface|null $driver
      */
-    public function __construct(QueueInterface $driver, OptionsInterface $options, $logger)
+    public function __construct(QueueInterface $manager, OptionsInterface $options, $logger)
     {
-        $this->manager = new QueueManager($driver);
+        $this->manager = $manager;
         $this->process = null;
         $this->status = Self::RUN;
         $this->options = $options;
@@ -127,7 +126,10 @@ class QueueWorker
     {
         switch($this->status) {
             case Self::STOP: {
-                System::writeLine("Stop");               
+                System::writeLine("Stop");   
+                if (empty($this->process) == false) {
+                    $this->process->stop(1);    
+                }         
                 exit(0);
             }
         }
@@ -164,8 +166,14 @@ class QueueWorker
      */
     public function stopDaemon()
     {
-        Process::run('php cli queue:stop');
-        sleep(2);
+        $pid = $this->getPid();
+        if ($pid != null) {
+            posix_kill(intval($pid),15);
+            sleep(2);
+            return posix_get_last_error();
+        }
+        
+        return false;
     }
 
     /**
