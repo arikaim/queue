@@ -96,7 +96,7 @@ class QueueManager implements QueueInterface
      *
      * @return QueueStorageInterface
      */
-    public function getQueue()
+    public function getStorageDriver()
     {
         return $this->driver;
     }
@@ -162,7 +162,7 @@ class QueueManager implements QueueInterface
     }
 
     /**
-     * Get job
+     * Find job by name, id or uuid
      *
      * @param string|integer $id Job id, uiid or name
      * @return array|false
@@ -280,9 +280,6 @@ class QueueManager implements QueueInterface
             $job = $this->create($job);
         }
 
-        if (($job instanceof JobInterface) == false) {
-            return false;
-        }
         // before run job event
         if ($this->eventDispatcher != null) {
             $this->eventDispatcher->dispatch('core.jobs.before.execute',Arrays::convertToArray($job));
