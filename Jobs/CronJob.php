@@ -46,13 +46,14 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
     }
 
     /**
-     * Return true if job i due
+     * Return true if job is due
      *
      * @return boolean
      */
     public function isDue()
     {
-        return CronExpression::factory($this->interval)->isDue(DateTime::create());
+       // $nextRunDate = $this->getDueDate();
+        return ($this->getDueDate() >= DateTime::getTimestamp()); //CronExpression::factory($this->interval)->isDue(DateTime::create());
     } 
 
     /**

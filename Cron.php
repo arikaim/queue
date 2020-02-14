@@ -45,7 +45,8 @@ class Cron
      */
     public static function isCronCommand($command)
     {
-        $len = strlen(Self::$command);
+        $len = \strlen(Self::$command);
+
         return (substr($command,-$len) == Self::$command);
     }
 
@@ -57,6 +58,7 @@ class Cron
     public function reInstall()
     {    
         $this->unInstall();
+
         return $this->install();
     }
 
@@ -83,6 +85,7 @@ class Cron
                 $this->removeJob($command);  
             }
         }
+
         return !$this->isInstalled();
     }
 
@@ -99,6 +102,7 @@ class Cron
                 return true;
             }
         }
+
         return false;
     }
 
@@ -111,6 +115,7 @@ class Cron
     public function hasJobs($jobs)
     {
         $msg = "no crontab for";
+        
         return (empty($jobs) == true || preg_match("/{$msg}/i", $jobs[0]) == true) ? false : true;
     }
     
