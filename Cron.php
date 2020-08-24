@@ -124,7 +124,8 @@ class Cron
      *
      * @return array
      */
-    public function getJobs() {
+    public function getJobs() 
+    {
         $output = Process::run('crontab -l');
 
         $output = (empty($output) == true) ? [] : $output;

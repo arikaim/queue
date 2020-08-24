@@ -9,8 +9,6 @@
 */
 namespace Arikaim\Core\Queue\Jobs;
 
-use Cron\CronExpression;
-
 use Arikaim\Core\Queue\Jobs\RecuringJob;
 use Arikaim\Core\Utils\DateTime;
 use Arikaim\Core\Interfaces\Job\RecuringJobInterface;
@@ -97,8 +95,8 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
     public function runEveryDay($time = null)
     {
         if ($time != null) {
-            $tokens = explode(':',$time);
-            return $this->resolve(2,(int)$tokens[0])->resolve(1,count($tokens) == 2 ? (int)$tokens[1] : '0');
+            $tokens = \explode(':',$time);
+            return $this->resolve(2,(int)$tokens[0])->resolve(1,\count($tokens) == 2 ? (int)$tokens[1] : '0');
         }
 
         $this->interval = '0 0 * * *';
@@ -113,6 +111,7 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
     public function runEveryWeek()
     {
         $this->interval = '0 0 * * 0';
+
         return $this;
     }
 
@@ -124,6 +123,7 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
     public function runEveryMonth()
     {
         $this->interval = '0 0 1 * *';
+
         return $this;
     }
 
@@ -135,6 +135,7 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
     public function runEveryYear()
     {
         $this->interval = '0 0 1 1 *';
+
         return $this;
     }
 
@@ -147,10 +148,11 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
      */
     protected function resolve($position, $value)
     {
-        $tokens = explode(' ', $this->interval);
+        $tokens = \explode(' ', $this->interval);
         $tokens[$position - 1] = $value;
 
         $this->interval = implode(' ', $tokens);
+
         return $this;
     }
 }

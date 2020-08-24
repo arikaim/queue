@@ -71,16 +71,6 @@ class QueueManager implements QueueInterface
     }
 
     /**
-     * Create queue worker
-     *
-     * @return object
-     */
-    public function createWorker()
-    {
-        return new QueueWorker();
-    }
-
-    /**
      * Set queue storage driver
      *
      * @param QueueStorageInterface $driver
@@ -221,7 +211,7 @@ class QueueManager implements QueueInterface
         $info = [
             'priority'          => $job->getPriority(),
             'name'              => $job->getName(),
-            'handler_class'     => get_class($job),         
+            'handler_class'     => \get_class($job),         
             'extension_name'    => (empty($extension) == true) ? $job->getExtensionName() : $extension,    
             'status'            => 1,
             'recuring_interval' => ($job instanceof RecuringJobInterface) ? $job->getRecuringInterval() : null,
@@ -276,7 +266,7 @@ class QueueManager implements QueueInterface
      */
     public function executeJob($job)
     {
-        if (is_string($job) == true || is_numeric($job) == true) {
+        if (\is_string($job) == true || \is_numeric($job) == true) {
             $job = $this->create($job);
         }
 

@@ -75,15 +75,15 @@ class QueueWorker
         $this->status = Self::RUN;
 
         // set signal handlers       
-        pcntl_signal(15,[$this,"handleSignals"]);
-        pcntl_signal(SIGINT,[$this,"handleSignals"]);
+        \pcntl_signal(15,[$this,"handleSignals"]);
+        \pcntl_signal(SIGINT,[$this,"handleSignals"]);
 
         while(true) {        
-            pcntl_signal_dispatch();
+            \pcntl_signal_dispatch();
             $this->checkStatus();
 
             $job = $this->manager->getNext();
-            if (is_object($job) == true) {
+            if (\is_object($job) == true) {
                 try {
                     $result = $this->manager->executeJob($job);
                 } catch (\Exception $e) {
@@ -168,9 +168,9 @@ class QueueWorker
     {
         $pid = $this->getPid();
         if ($pid != null) {
-            posix_kill(intval($pid),15);
-            sleep(2);
-            return posix_get_last_error();
+            \posix_kill(intval($pid),15);
+            \sleep(2);
+            return \posix_get_last_error();
         }
         
         return false;
