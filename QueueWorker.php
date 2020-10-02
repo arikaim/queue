@@ -75,8 +75,8 @@ class QueueWorker
         $this->status = Self::RUN;
 
         // set signal handlers       
-        \pcntl_signal(15,[$this,"handleSignals"]);
-        \pcntl_signal(SIGINT,[$this,"handleSignals"]);
+        \pcntl_signal(15,[$this,'handleSignals']);
+        \pcntl_signal(SIGINT,[$this,'handleSignals']);
 
         while(true) {        
             \pcntl_signal_dispatch();
@@ -126,7 +126,7 @@ class QueueWorker
     {
         switch($this->status) {
             case Self::STOP: {
-                System::writeLine("Stop");   
+                System::writeLine('Stop');   
                 if (empty($this->process) == false) {
                     $this->process->stop(1);    
                 }         

@@ -71,7 +71,7 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
      */
     public function runEveryMinute($minutes = null)
     {
-        $this->interval = (empty($minutes) == true) ? "* * * * *" : "*/$minutes * * * *";
+        $this->interval = (empty($minutes) == true) ? '* * * * *' : '*/' . $minutes . ' * * * *';
         return $this;
     }
 
@@ -148,10 +148,10 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
      */
     protected function resolve($position, $value)
     {
-        $tokens = \explode(' ', $this->interval);
+        $tokens = \explode(' ',$this->interval);
         $tokens[$position - 1] = $value;
 
-        $this->interval = implode(' ', $tokens);
+        $this->interval = \implode(' ',$tokens);
 
         return $this;
     }

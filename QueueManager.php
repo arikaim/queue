@@ -19,7 +19,6 @@ use Arikaim\Core\Interfaces\Job\ScheduledJobInterface;
 use Arikaim\Core\Interfaces\OptionsInterface;
 use Arikaim\Core\Interfaces\QueueInterface;
 use Arikaim\Core\Queue\Cron;
-use Arikaim\Core\Queue\QueueWorker;
 use Arikaim\Core\System\Process;
 
 /**

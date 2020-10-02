@@ -34,7 +34,7 @@ class Cron
     {
         $php = (Process::findPhp() === false) ? 'php' : Process::findPhp();
         
-        return "*/$minutes * * * * " . $php . " " . ROOT_PATH . BASE_PATH . "/". Self::$command;
+        return "*/$minutes * * * * " . $php . ' ' . ROOT_PATH . BASE_PATH . "/". Self::$command;      
     }
     
     /**
@@ -114,7 +114,7 @@ class Cron
      */
     public function hasJobs($jobs)
     {
-        $msg = "no crontab for";
+        $msg = 'no crontab for';
         
         return (empty($jobs) == true || preg_match("/{$msg}/i", $jobs[0]) == true) ? false : true;
     }
@@ -142,8 +142,9 @@ class Cron
      */
     public function hasJob($command)
     {
-        $commands = $this->getJobs();      
-        return in_array($command,$commands); 
+        $commands = $this->getJobs();  
+
+        return \in_array($command,$commands); 
     }   
 
     /**
@@ -159,7 +160,7 @@ class Cron
         }
     
         $jobs = $this->getJobs();
-        array_push($jobs,$command);
+        \array_push($jobs,$command);
 
         return $this->addJobs($jobs);
     }
@@ -177,8 +178,7 @@ class Cron
                 unset($commands[$key]);
             }
         }
-        $text = trim(Arrays::toString($commands));
-        
+        $text = \trim(Arrays::toString($commands));
         if (empty($text) == false) {
             return Process::run('echo "'. $text .'" | crontab -');
         } 
@@ -206,7 +206,7 @@ class Cron
     {
         if ($this->hasJob($command) == true) {
             $jobs = $this->getJobs();
-            unset($jobs[array_search($command,$jobs)]);
+            unset($jobs[\array_search($command,$jobs)]);
             return $this->addJobs($jobs);
         }
         
@@ -221,7 +221,7 @@ class Cron
     public function getServiceDetails()
     {
         return [
-            'name'       => "Cron",
+            'name'       => 'Cron',
             'installed'  => $this->isInstalled(),
             'jobs'       => $this->getJobs(),
             'user'       => Process::getCurrentUser()['name']
