@@ -9,17 +9,13 @@
 */
 namespace Arikaim\Core\Queue;
 
-use Arikaim\Core\Collection\Arrays;
 use Arikaim\Core\Utils\Factory;
-use Arikaim\Core\Interfaces\Events\EventDispatcherInterface;
 use Arikaim\Core\Interfaces\Job\QueueStorageInterface;
 use Arikaim\Core\Interfaces\Job\JobInterface;
 use Arikaim\Core\Interfaces\Job\RecuringJobInterface;
 use Arikaim\Core\Interfaces\Job\ScheduledJobInterface;
-use Arikaim\Core\Interfaces\OptionsInterface;
 use Arikaim\Core\Interfaces\QueueInterface;
 use Arikaim\Core\Queue\Cron;
-use Arikaim\Core\System\Process;
 
 /**
  * Queue manager
@@ -34,29 +30,13 @@ class QueueManager implements QueueInterface
     protected $driver;
 
     /**
-     * Event Dispatcher
-     *
-     * @var EventDispatcherInterface
-     */
-    protected $eventDispatcher;
-
-    /**
-     * Options
-     *
-     * @var OptionsInterface
-     */
-    protected $options;
-
-    /**
      * Constructor
      *
      * @param QueueStorageInterface $driver
      */
-    public function __construct(QueueStorageInterface $driver, EventDispatcherInterface $eventDispatcher, OptionsInterface $options)
+    public function __construct(QueueStorageInterface $driver)
     {       
-        $this->setDriver($driver);
-        $this->eventDispatcher = $eventDispatcher;
-        $this->options = $options;
+        $this->setDriver($driver);           
     }
 
     /**
@@ -133,12 +113,10 @@ class QueueManager implements QueueInterface
      * @return object|null
      */
     public function createJobFromArray(array $data, $class = null)
-    {
-        if (empty($class) == true) {
-            $class = $data['class'];
-        }
-
+    {      
+        $class = $class ?? $data['class'];
         $instance = Factory::createJob($class);
+
         if ($instance == null) {
             return null;
         }
@@ -211,7 +189,7 @@ class QueueManager implements QueueInterface
             'priority'          => $job->getPriority(),
             'name'              => $job->getName(),
             'handler_class'     => \get_class($job),         
-            'extension_name'    => (empty($extension) == true) ? $job->getExtensionName() : $extension,    
+            'extension_name'    => $extension ?? $job->getExtensionName(),
             'status'            => 1,
             'recuring_interval' => ($job instanceof RecuringJobInterface) ? $job->getRecuringInterval() : null,
             'schedule_time'     => ($job instanceof ScheduledJobInterface) ? $job->getScheduleTime() : null,
@@ -269,11 +247,6 @@ class QueueManager implements QueueInterface
             $job = $this->create($job);
         }
 
-        // before run job event
-        if ($this->eventDispatcher != null) {
-            $this->eventDispatcher->dispatch('core.jobs.before.execute',Arrays::convertToArray($job));
-        }
-      
         try {
             $job->execute();
             $this->driver->updateExecutionStatus($job);
@@ -281,27 +254,6 @@ class QueueManager implements QueueInterface
             return false;
         }
 
-        // after run job event
-        if ($this->eventDispatcher != null) {
-            $this->eventDispatcher->dispatch('core.jobs.after.execute',Arrays::convertToArray($job));
-        }
-
         return true;
-    }
-
-    /**
-     * Get worker process info
-     *
-     * @return array
-     */
-    public function getQueueWorkerInfo()
-    {      
-        $pid = $this->options->get('queue.worker.pid',null);
-
-        return [
-            'pid'     => $pid,
-            'command' => $this->options->get('queue.worker.command',null),
-            'running' => (empty($pid) == true) ? false : Process::isRunning($pid)
-        ];
-    }
+    }   
 }
