@@ -181,16 +181,17 @@ class QueueManager implements QueueInterface
      *
      * @param JobInterface $job
      * @param string|null $extension
+     * @param bool $disabled
      * @return bool
      */
-    public function addJob(JobInterface $job, $extension = null)
+    public function addJob(JobInterface $job, $extension = null, $disabled = false)
     {       
         $info = [
             'priority'          => $job->getPriority(),
             'name'              => $job->getName(),
             'handler_class'     => \get_class($job),         
             'extension_name'    => $extension ?? $job->getExtensionName(),
-            'status'            => 1,
+            'status'            => ($disabled == false) ? 1 : 0,
             'recuring_interval' => ($job instanceof RecuringJobInterface) ? $job->getRecuringInterval() : null,
             'schedule_time'     => ($job instanceof ScheduledJobInterface) ? $job->getScheduleTime() : null,
             'uuid'              => $job->getId()
