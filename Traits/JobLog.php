@@ -15,13 +15,27 @@ namespace Arikaim\Core\Queue\Traits;
 trait JobLog
 {  
     /**
+     * Log message
+     *
+     * @var string
+     */
+    protected $logMessage = 'Job executed';
+
+    /**
+     * Log context
+     *
+     * @var array
+     */
+    protected $logContext = [];
+
+    /**
      * Get log message
      *
      * @return string
      */
-    public function getLogMessage()
+    public function getLogMessage(): string
     {
-        return $this->logMessage ?? 'Job executed.';
+        return $this->logMessage ?? 'Job executed';
     }
 
     /**
@@ -30,9 +44,20 @@ trait JobLog
      * @param string $message
      * @return void
      */
-    public function setLogMessage($message)
+    public function setLogMessage(string $message): void
     {
         $this->logMessage = $message;
+    }
+
+    /**
+     * Set log context
+     *
+     * @param arra $context
+     * @return void
+     */
+    public function setLogContext(array $context): void
+    {
+        $this->logContext = $context;
     }
 
     /**
@@ -40,15 +65,8 @@ trait JobLog
      *
      * @return array
      */
-    public function getLogContext()
+    public function getLogContext(): array
     {
-        $output = $this->output ?? [];
-        $context = [];
-        foreach($output as $key => $value) {
-            $context[$key] = $value['value'];
-        }
-
-        return $context;
+        return $this->logContext ?? [];
     }
-
 }

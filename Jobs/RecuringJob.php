@@ -14,19 +14,20 @@ use Cron\CronExpression;
 use Arikaim\Core\Utils\DateTime;
 use Arikaim\Core\Utils\TimeInterval;
 use Arikaim\Core\Queue\Jobs\Job;
+use Arikaim\Core\Interfaces\Job\JobInterface;
 use Arikaim\Core\Interfaces\Job\RecuringJobInterface;
 
 /**
  * Base class for all Recurring jobs
  */
-abstract class RecuringJob extends Job implements RecuringJobInterface
+abstract class RecuringJob extends Job implements JobInterface, RecuringJobInterface
 {
     /**
      * Recuring interval
      *
      * @var string|null
      */
-    protected $interval;
+    protected $interval = null;
     
     /**
      * Constructor
@@ -34,7 +35,7 @@ abstract class RecuringJob extends Job implements RecuringJobInterface
      * @param string|null $extension
      * @param string|null $name
      */
-    public function __construct($extension = null, $name = null)
+    public function __construct(?string $extension = null, ?string $name = null)
     {
         parent::__construct($extension,$name);
 
@@ -42,20 +43,56 @@ abstract class RecuringJob extends Job implements RecuringJobInterface
     }
 
     /**
+     * Convert to array
+     *
+     * @return array
+    */
+    public function toArray(): array
+    {
+        $result = parent::toArray();
+        $result['recuring_interval'] = $this->getRecuringInterval();
+        $result['next_run_date'] = $this->getDueDate();
+        
+        return $result;
+    }
+
+    /**
+     * Return true if job is due
+     *
+     * @return boolean
+    */
+    public function isDue(): bool
+    {
+        $dateExecuted = $this->getDateExecuted();
+        if (empty($dateExecuted) == true) {         
+            return true;
+        }
+
+        return ($this->getDueDate() <= DateTime::getTimestamp());
+    } 
+
+    /**
      * Get next run date
      *
      * @param string $interval
+     * @param int|null $dateLastExecution
      * @return integer|false
      */
-    public static function getNextRunDate($interval)
+    public static function getNextRunDate(string $interval,?int $dateLastExecution = null)
     {
+        if (empty($dateLastExecution) == true) {
+            $dateTime = DateTime::getDateTime();
+        } else {
+            $dateTime = DateTime::create('@' . (string)$dateLastExecution);
+        }
+
         if (CronExpression::isValidExpression($interval) == true) {
-            return CronExpression::factory($interval)->getNextRunDate('now',0,false,DateTime::getTimeZoneName())->getTimestamp();
+            return CronExpression::factory($interval)->getNextRunDate($dateTime,0,false,DateTime::getTimeZoneName())->getTimestamp();
         }
 
         if (TimeInterval::isDurationInverval($interval) == true) {
             $interval = TimeInterval::create($interval);
-            $dateTime = DateTime::getDateTime();
+        
             return $dateTime->add($interval)->getTimestamp();
         }
 
@@ -69,7 +106,7 @@ abstract class RecuringJob extends Job implements RecuringJobInterface
      */
     public function getDueDate()
     {
-        return Self::getNextRunDate($this->interval);
+        return Self::getNextRunDate($this->interval,$this->getDateExecuted());
     }
 
     /**
@@ -77,7 +114,7 @@ abstract class RecuringJob extends Job implements RecuringJobInterface
      *
      * @return string
      */
-    public function getRecuringInterval()
+    public function getRecuringInterval(): string
     {
         return $this->interval;
     }
@@ -88,7 +125,7 @@ abstract class RecuringJob extends Job implements RecuringJobInterface
      * @param string $interval
      * @return void
      */
-    public function setRecuringInterval($interval)
+    public function setRecuringInterval(string $interval): void
     {
         $this->interval = $interval;
     }

@@ -24,15 +24,15 @@ abstract class ScheduledJob extends Job implements ScheduledJobInterface, JobInt
      *
      * @var integer
      */
-    protected $scheduleTime;
+    protected $scheduleTime = null;
  
     /**
      * Constructor
      *  
-     * @param string $extension
+     * @param string?null $extension
      * @param string|null $name
      */
-    public function __construct($extension, $name = null)
+    public function __construct(?string $extension,?string $name = null)
     {
         parent::__construct($extension,$name);
 
@@ -40,11 +40,24 @@ abstract class ScheduledJob extends Job implements ScheduledJobInterface, JobInt
     }
 
     /**
+     * Convert to array
+     *
+     * @return array
+    */
+    public function toArray(): array
+    {
+        $result = parent::toArray();
+        $result['schedule_time'] = $this->getScheduleTime();
+        
+        return $result;
+    }
+
+    /**
      * ScheduledJobInterface implementation
      *
      * @return integer
      */
-    public function getScheduleTime()
+    public function getScheduleTime(): int
     {
         return $this->scheduleTime;
     }
@@ -52,10 +65,10 @@ abstract class ScheduledJob extends Job implements ScheduledJobInterface, JobInt
     /**
      * Set scheduled time (timestamp)
      *
-     * @param integer $date_time
+     * @param integer $timestamp
      * @return ScheduledJob
      */
-    public function setScheduleTime($timestamp)
+    public function setScheduleTime(int $timestamp)
     {
         $this->scheduleTime = $timestamp;
 
@@ -68,7 +81,7 @@ abstract class ScheduledJob extends Job implements ScheduledJobInterface, JobInt
      * @param string $date
      * @return ScheduledJob
      */
-    public function runAt($date)
+    public function runAt(string $date)
     {
         return $this->setScheduleTime(DateTime::toTimestamp($date));
     }
@@ -78,12 +91,12 @@ abstract class ScheduledJob extends Job implements ScheduledJobInterface, JobInt
      *
      * @return boolean
      */
-    public function isDue()
+    public function isDue(): bool
     {
         if (empty($this->getScheduleTime()) == true) {
             return false;
         }
 
-        return ($this->scheduleTime < DateTime::getTimestamp()) ? true : false;
+        return ($this->scheduleTime <= DateTime::getTimestamp());
     }
 }

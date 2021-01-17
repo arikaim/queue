@@ -10,12 +10,17 @@
 namespace Arikaim\Core\Queue;
 
 use Arikaim\Core\Utils\Factory;
+use Arikaim\Core\Queue\Cron;
+
+use Arikaim\Core\Interfaces\ConfigPropertiesInterface;
 use Arikaim\Core\Interfaces\Job\QueueStorageInterface;
 use Arikaim\Core\Interfaces\Job\JobInterface;
 use Arikaim\Core\Interfaces\Job\RecuringJobInterface;
 use Arikaim\Core\Interfaces\Job\ScheduledJobInterface;
+use Arikaim\Core\Interfaces\Job\JobProgressInterface;
+use Arikaim\Core\Interfaces\Job\SaveJobConfigInterface;
 use Arikaim\Core\Interfaces\QueueInterface;
-use Arikaim\Core\Queue\Cron;
+use Closure;
 
 /**
  * Queue manager
@@ -55,7 +60,7 @@ class QueueManager implements QueueInterface
      * @param QueueStorageInterface $driver
      * @return void
      */
-    public function setDriver(QueueStorageInterface $driver)
+    public function setDriver(QueueStorageInterface $driver): void
     {
         $this->driver = $driver;
     }
@@ -65,7 +70,7 @@ class QueueManager implements QueueInterface
      *
      * @return QueueStorageInterface
      */
-    public function getStorageDriver()
+    public function getStorageDriver(): QueueStorageInterface
     {
         return $this->driver;
     }
@@ -76,7 +81,7 @@ class QueueManager implements QueueInterface
      * @param mixed $id
      * @return boolean
      */
-    public function has($id)
+    public function has($id): bool
     {
         return $this->driver->hasJob($id);
     }
@@ -87,7 +92,7 @@ class QueueManager implements QueueInterface
      * @param array $filter
      * @return boolean
      */
-    public function deleteJobs($filter = [])
+    public function deleteJobs(array $filter = []): bool
     {
         return $this->driver->deleteJobs($filter);
     }
@@ -96,45 +101,81 @@ class QueueManager implements QueueInterface
      * Create job obj from jobs queue
      *
      * @param string|integer $name
-     * @return JobInterface|false
+     * @param string|null $extension
+     * @return JobInterface|null
      */
-    public function create($name)
+    public function create($name,?string $extension = null): ?JobInterface
     {
-        $jobInfo = $this->getJob($name);
+        $job = Factory::createJob($name,$extension);
+        if (empty($job) == true) {
+            // load from db
+            $jobInfo = $this->getJob($name);
+            $job = $this->createJobFromArray($jobInfo);    
+            if (empty($job) == true) {
+                return null;
+            }            
+        }
         
-        return ($jobInfo === false) ? false : $this->createJobFromArray($jobInfo,$jobInfo['handler_class']);    
+        return $job;
     }
 
     /**
      * Create job intence from array 
      *
-     * @param array $data
-     * @param string|null $class
-     * @return object|null
+     * @param array $data  
+     * @return JobInterface|null
      */
-    public function createJobFromArray(array $data, $class = null)
+    public function createJobFromArray(array $data): ?JobInterface
     {      
-        $class = $class ?? $data['class'];
-        $instance = Factory::createJob($class);
-
-        if ($instance == null) {
+        $class = $data['handler_class'] ?? null;
+        $extension = $data['extension_name'] ?? null;
+        $job = Factory::createJob($class,$extension);       
+        if ($job == null) {
             return null;
         }
+       
+        $job->setId($data['uuid'] ?? null);
+        $job->setName($data['name'] ?? null);
+        $job->setStatus($data['status'] ?? JobInterface::STATUS_CREATED);
+        $job->setPriority($data['priority'] ?? 0);
+        $job->setExtensionName($data['extension_name'] ?? null);
+        $job->setDateExecuted($data['date_executed'] ?? null);
+        $job->setQueue($data['queue'] ?? null);
 
-        foreach ($data as $key => $value) {
-            $instance->{$key} = $value;
+        if ($job instanceof ScheduledJobInterface) {
+            $job->setScheduleTime($data['schedule_time'] ?? 0);
+        }
+        if ($job instanceof RecuringJobInterface) {
+            $job->setRecuringInterval($data['recuring_interval'] ?? '');
+        }
+     
+        if ($job instanceof ConfigPropertiesInterface) {
+            $config = $data['config'] ?? [];
+            $job->setConfigProperties($config);
         }
 
-        return $instance;
+        return $job;
+    }
+
+    /**
+     * Save job config
+     *
+     * @param string|int $id
+     * @param array $config
+     * @return boolean
+     */
+    public function saveJobConfig($id, array $config): bool
+    {
+        return $this->driver->saveJobConfig($id,$config);    
     }
 
     /**
      * Find job by name, id or uuid
      *
      * @param string|integer $id Job id, uiid or name
-     * @return array|false
+     * @return array|null
      */
-    public function getJob($id)
+    public function getJob($id): ?array
     {
         return $this->driver->getJob($id);    
     }
@@ -143,9 +184,9 @@ class QueueManager implements QueueInterface
      * Get recurring jobs
      *
      * @param string|null $extension
-     * @return array
+     * @return array|null
      */
-    public function getRecuringJobs($extension = null)
+    public function getRecuringJobs(?string $extension = null): ?array
     {   
         $filter = [
             'recuring_interval' => '*',
@@ -159,9 +200,9 @@ class QueueManager implements QueueInterface
      * Get jobs
      *
      * @param array $filter
-     * @return array
+     * @return array|null
      */
-    public function getJobs($filter = [])
+    public function getJobs(array $filter = []): ?array
     {  
         return $this->driver->getJobs($filter);   
     }
@@ -169,31 +210,37 @@ class QueueManager implements QueueInterface
     /**
      * Get all jobs due
      * 
-     * @return array
+     * @return array|null
      */
-    public function getJobsDue()
+    public function getJobsDue(): ?array
     {
         return $this->driver->getJobsDue();
     }
 
     /**
-     * Add job
+     * Register job
      *
      * @param JobInterface $job
      * @param string|null $extension
      * @param bool $disabled
      * @return bool
      */
-    public function addJob(JobInterface $job, $extension = null, $disabled = false)
+    public function addJob(JobInterface $job,?string $extension = null,bool $disabled = false): bool
     {       
+        $config = null;
+        if ($job instanceof ConfigPropertiesInterface) {
+            $config = $job->createConfigProperties();
+        }
+       
         $info = [
             'priority'          => $job->getPriority(),
             'name'              => $job->getName(),
             'handler_class'     => \get_class($job),         
             'extension_name'    => $extension ?? $job->getExtensionName(),
-            'status'            => ($disabled == false) ? 1 : 0,
+            'status'            => ($disabled == false) ? JobInterface::STATUS_PENDING : JobInterface::STATUS_SUSPENDED,
             'recuring_interval' => ($job instanceof RecuringJobInterface) ? $job->getRecuringInterval() : null,
             'schedule_time'     => ($job instanceof ScheduledJobInterface) ? $job->getScheduleTime() : null,
+            'config'            => (\is_array($config) == true) ? \json_encode($config) : null,
             'uuid'              => $job->getId()
         ];
 
@@ -206,7 +253,7 @@ class QueueManager implements QueueInterface
      * @param string|integer $id Job id, uiid
      * @return bool
      */
-    public function deleteJob($id)
+    public function deleteJob($id): bool
     {
         return $this->driver->deleteJob($id);
     }
@@ -216,7 +263,7 @@ class QueueManager implements QueueInterface
      *    
      * @return boolean
      */
-    public function clear()
+    public function clear(): bool
     {
         return $this->driver->deleteJobs();
     }
@@ -226,35 +273,66 @@ class QueueManager implements QueueInterface
      *
      * @return JobInterface|null
      */
-    public function getNext()
+    public function getNext(): ?JobInterface
     {
         $jobData = $this->driver->getNext();
-        if ($jobData === false) {
-            return false;
-        }
 
-        return Factory::createJob($jobData['handler_class'],$jobData['extension_name'],$jobData['name'],$jobData['priority']);     
+        return (empty($jobData) == true) ? null : $this->createJobFromArray($jobData);                 
     }
 
     /**
      * Run job
      *
-     * @param JobInterface|string|integer $job
-     * @return boolean
+     * @param JobInterface|string|int $name
+     * @param Closure|null $onJobProgress
+     * @param Closure|null $onJobProgressError
+     * @return JobInterface|null
      */
-    public function executeJob($job)
+    public function run($name,?Closure $onJobProgress = null,?Closure $onJobProgressError = null): ?JobInterface
     {
-        if (\is_string($job) == true || \is_numeric($job) == true) {
-            $job = $this->create($job);
+        if (\is_object($name) == false) {
+            $job = $this->create($name);
+        }
+        if (empty($job) == true) {
+            return null;
+        }
+
+        return $this->executeJob($job,$onJobProgress,$onJobProgressError);
+    }
+
+    /**
+     * Execute job
+     *
+     * @param JobInterface $job
+     * @param Closure|null $onJobProgress
+     * @param Closure|null $onJobProgressError
+     * @return JobInterface|null
+    */
+    public function executeJob(JobInterface $job,?Closure $onJobProgress = null,?Closure $onJobProgressError = null): ?JobInterface
+    {
+        if ($job instanceof JobProgressInterface) {
+            $job->onJobProgress($onJobProgress);
+            $job->onJobProgressError($onJobProgressError);
+        }
+        if ($job->getStatus() == JobInterface::STATUS_SUSPENDED) {
+            $job->addError('Job is suspended.');
+            return $job;
         }
 
         try {
             $job->execute();
+            $job->setStatus(JobInterface::STATUS_EXECUTED);          
             $this->driver->updateExecutionStatus($job);
+            
+            if ($job instanceof SaveJobConfigInterface) {
+                $config = $job->getConfigProperties()->toArray();
+                $id = (empty($job->getId()) == true) ? $job->getName() : $job->getId();
+                $this->saveJobConfig($id,$config);
+            }
         } catch (\Exception $e) {
-            return false;
+            $job->addError($e->getMessage());          
         }
-
-        return true;
+      
+        return $job;
     }   
 }

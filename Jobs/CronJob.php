@@ -10,14 +10,13 @@
 namespace Arikaim\Core\Queue\Jobs;
 
 use Arikaim\Core\Queue\Jobs\RecuringJob;
-use Arikaim\Core\Utils\DateTime;
 use Arikaim\Core\Interfaces\Job\RecuringJobInterface;
 use Arikaim\Core\Interfaces\Job\JobInterface;
 
 /**
  * Cron job
  */
-class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
+class CronJob extends RecuringJob implements RecuringJobInterface, JobInterface
 {
     /**
      * Constructor
@@ -25,7 +24,7 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
      * @param string|null $extension
      * @param string|null $name
      */
-    public function __construct($extension = null, $name = null)
+    public function __construct(?string $extension = null,?string $name = null)
     {
         parent::__construct($extension,$name);
         $this->interval = '* * * * *';
@@ -37,39 +36,28 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
      * @param string $interval
      * @return CronJob
      */
-    public function setInterval($interval) {
+    public function setInterval(string $interval) {
         $this->setRecuringInterval($interval);
 
         return $this;
     }
 
     /**
-     * Return true if job is due
-     *
-     * @return boolean
-     */
-    public function isDue()
-    {
-        return ($this->getDueDate() >= DateTime::getTimestamp());
-    } 
-
-    /**
      * Job code
      *
-     * @return mixed
+     * @return void|mixed
      */
     public function execute()
     {
-        return false;
     }
 
     /**
      * Run every minute
      *
-     * @param integer|null $minutes
+     * @param string|null $minutes
      * @return CronJob
      */
-    public function runEveryMinute($minutes = null)
+    public function runEveryMinute(?string $minutes = null)
     {
         $this->interval = (empty($minutes) == true) ? '* * * * *' : '*/' . $minutes . ' * * * *';
         return $this;
@@ -92,14 +80,14 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
      * @param string|null $time
      * @return CronJob
      */
-    public function runEveryDay($time = null)
+    public function runEveryDay(?string $time = null)
     {
-        if ($time != null) {
+        if (empty($time) == false) {
             $tokens = \explode(':',$time);
             return $this->resolve(2,(int)$tokens[0])->resolve(1,\count($tokens) == 2 ? (int)$tokens[1] : '0');
         }
-
         $this->interval = '0 0 * * *';
+
         return $this;
     }
 
@@ -146,7 +134,7 @@ class CronJob extends RecuringJob implements RecuringJobInterface,JobInterface
      * @param mixed $value
      * @return CronJob
      */
-    protected function resolve($position, $value)
+    protected function resolve(int $position, $value)
     {
         $tokens = \explode(' ',$this->interval);
         $tokens[$position - 1] = $value;

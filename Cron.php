@@ -27,14 +27,14 @@ class Cron
     /**
      * Get cron command
      * 
-     * @param integer $minutes
+     * @param string $minutes
      * @return string
      */
-    public static function getCronCommand($minutes = 5)
+    public static function getCronCommand(string $minutes = '5'): string
     {
         $php = (Process::findPhp() === false) ? 'php' : Process::findPhp();
         
-        return "*/$minutes * * * * " . $php . ' ' . ROOT_PATH . BASE_PATH . "/". Self::$command;      
+        return "*/$minutes * * * * " . $php . ' ' . ROOT_PATH . BASE_PATH . '/'. Self::$command;      
     }
     
     /**
@@ -43,7 +43,7 @@ class Cron
      * @param string $command
      * @return boolean
      */
-    public static function isCronCommand($command)
+    public static function isCronCommand(string $command): bool
     {
         $len = \strlen(Self::$command);
 
@@ -94,7 +94,7 @@ class Cron
      *
      * @return boolean
      */
-    public function isInstalled()
+    public function isInstalled(): bool
     {
         $jobs = $this->getJobs();
         foreach ($jobs as $command) {
@@ -112,11 +112,11 @@ class Cron
      * @param array $jobs
      * @return boolean
      */
-    public function hasJobs($jobs)
+    public function hasJobs($jobs): bool
     {
         $msg = 'no crontab for';
         
-        return (empty($jobs) == true || preg_match("/{$msg}/i", $jobs[0]) == true) ? false : true;
+        return (empty($jobs) == true || \preg_match("/{$msg}/i", $jobs[0]) == true) ? false : true;
     }
     
     /**
@@ -124,7 +124,7 @@ class Cron
      *
      * @return array
      */
-    public function getJobs() 
+    public function getJobs(): array 
     {
         $output = Process::run('crontab -l');
 
@@ -140,7 +140,7 @@ class Cron
      * @param string $command
      * @return boolean
      */
-    public function hasJob($command)
+    public function hasJob(string $command): bool
     {
         $commands = $this->getJobs();  
 
@@ -153,7 +153,7 @@ class Cron
      * @param string $command
      * @return void
      */
-    public function addJob($command)
+    public function addJob(string $command)
     {
         if ($this->hasJob($command) == true) {
             return true;
@@ -202,12 +202,14 @@ class Cron
      * @param string $command
      * @return bool
      */
-    public function removeJob($command) 
+    public function removeJob($command): bool 
     {
         if ($this->hasJob($command) == true) {
             $jobs = $this->getJobs();
             unset($jobs[\array_search($command,$jobs)]);
-            return $this->addJobs($jobs);
+            $this->addJobs($jobs);
+
+            return true;
         }
         
         return true;
@@ -218,7 +220,7 @@ class Cron
      *
      * @return array
      */
-    public function getServiceDetails()
+    public function getServiceDetails(): array
     {
         return [
             'name'       => 'Cron',

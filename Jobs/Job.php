@@ -19,35 +19,63 @@ abstract class Job implements JobInterface
     /**
      * Unique job id 
      *
-     * @var string|integer
+     * @var string|integer|null
      */
-    protected $id;
+    protected $id = null;
 
     /**
      * Job name
      *
      * @var string|null
      */
-    protected $name;
+    protected $name = null;
 
     /**
      * Priority
      *
      * @var integer
      */
-    protected $priority;
+    protected $priority = 0;
 
     /**
      * Extension name
      *
+     * @var string|null
+     */
+    protected $extension = null;
+  
+    /**
+     * Job status
+     *
+     * @var int
+     */
+    protected $status = JobInterface::STATUS_CREATED;
+
+    /**
+     * Execution errors
+     *
+     * @var array
+    */
+    protected $errors = [];
+
+    /**
+     * Execution timestamp 
+     *
+     * @var int|null
+     */
+    protected $dateExecuted = null;
+
+    /**
+     * Queue name
+     *
      * @var string
      */
-    protected $extension;
-  
+    protected $queue = null;
+
     /**
      * Job code
      *
-     * @return void
+     * @return mixed
      */
     abstract public function execute();
 
@@ -57,21 +85,120 @@ abstract class Job implements JobInterface
      * @param string|null $extension
      * @param string|null $name
      */
-    public function __construct($extension = null, $name = null)
+    public function __construct(?string $extension = null, ?string $name = null)
     {
         $this->setExtensionName($extension);
         $this->setName($name);
         $this->setPriority(0);
+        $this->dateExecuted = null;
+        $this->status = JobInterface::STATUS_CREATED;
+        $this->errors = [];
         $this->id = null;
+    }
+
+    /**
+     * Convert to array
+     *
+     * @return array
+     */
+    public function toArray(): array
+    {
+        return [
+            'id'             => $this->getId(),
+            'name'           => $this->getName(),
+            'priority'       => $this->getPriority(),
+            'status'         => $this->getStatus(),
+            'date_executed'  => $this->getDateExecuted(),          
+            'extension_name' => $this->getExtensionName(),
+            'errors'         => $this->getErrors(),
+            'handler_class'  => \get_class(),
+            'queue'          => $this->getQueue(),
+        ];
+    }
+
+    /**
+     * Get execution errors
+     *
+     * @return array
+     */
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
+
+    /**
+     * Add error
+     *
+     * @param string $errorMessage
+     * @return void
+     */
+    public function addError(string $errorMessage): void
+    {
+        $this->errors[] = $errorMessage;
+    }
+
+    /**
+     * Return true if job is executed successful
+     *
+     * @return boolean
+     */
+    public function hasSuccess(): bool
+    {
+        return (\count($this->errors) == 0);
+    }
+
+    /**
+     * Get execution timestamp
+     *   
+     * @return int
+    */
+    public function getDateExecuted(): ?int
+    {
+        return $this->dateExecuted;
+    }
+
+    /**
+     * Set execution date
+     *   
+     * @param int|null $time  timestamp
+     * @return void
+    */
+    public function setDateExecuted(?int $time): void
+    {
+        $this->dateExecuted = $time;
+    }
+
+    /**
+     * Get job status
+     *   
+     * @return int
+    */
+    public function getStatus(): int
+    {
+        return $this->status;
+    }
+
+    /**
+     * Set job status
+     *
+     * @param integer $status
+     * @return void
+     */
+    public function setStatus(int $status): void
+    {
+        if ($status == JobInterface::STATUS_CREATED) {
+            $this->errors = [];
+        }
+        $this->status = $status;
     }
 
     /**
      * Set
      *
      * @param string $name
-     * @param mxied $value
+     * @param mixed $value
      */
-    public function __set($name, $value)
+    public function __set(string $name, $value): void
     {
         $this->$name = $value;
     }
@@ -79,10 +206,10 @@ abstract class Job implements JobInterface
     /**
      * Set id
      *
-     * @param string|integer $id
+     * @param string|null $id
      * @return void
      */
-    public function setId($id)
+    public function setId(?string $id): void
     {
         $this->id = $id;
     }
@@ -90,9 +217,9 @@ abstract class Job implements JobInterface
     /**
      * Get id
      *
-     * @return string|integer
+     * @return string|null
      */
-    public function getId()
+    public function getId(): ?string
     {
         return $this->id;
     }
@@ -102,7 +229,7 @@ abstract class Job implements JobInterface
      *
      * @return string
      */
-    public function getExtensionName()
+    public function getExtensionName(): string 
     {
         return $this->extension;
     }
@@ -110,9 +237,9 @@ abstract class Job implements JobInterface
     /**
      * Get name
      *
-     * @return string
+     * @return string|null
      */
-    public function getName()
+    public function getName(): ?string
     {
         return $this->name;
     }
@@ -122,7 +249,7 @@ abstract class Job implements JobInterface
      *
      * @return integer
      */
-    public function getPriority()
+    public function getPriority(): int
     {
         return $this->priority;
     }
@@ -130,10 +257,10 @@ abstract class Job implements JobInterface
     /**
      * Set name
      *
-     * @param string $name
+     * @param string|null $name
      * @return void
      */
-    public function setName($name)
+    public function setName(?string $name): void
     {
         $this->name = $name;
     }
@@ -144,7 +271,7 @@ abstract class Job implements JobInterface
      * @param integer $priority
      * @return void
      */
-    public function setPriority($priority)
+    public function setPriority(int $priority): void
     {
         $this->priority = $priority;
     }
@@ -152,11 +279,32 @@ abstract class Job implements JobInterface
     /**
      * Set extension name
      *
-     * @param string $name
+     * @param string|null $name
      * @return void
      */
-    public function setExtensionName($name)
+    public function setExtensionName(?string $name): void
     {
-        return $this->extension = $name;
+        $this->extension = $name;
+    }
+
+    /**
+     * Set executuion Queue (null for any)
+     *
+     * @param string|null $name
+     * @return void
+     */
+    public function setQueue(?string $name): void
+    {
+        $this->queue = $name;
+    }
+
+    /**
+     * Get queue
+     *
+     * @return string|null
+     */
+    public function getQueue(): ?string
+    {
+        return $this->queue;
     }
 }
