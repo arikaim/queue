@@ -19,7 +19,9 @@ use Arikaim\Core\Interfaces\Job\RecuringJobInterface;
 use Arikaim\Core\Interfaces\Job\ScheduledJobInterface;
 use Arikaim\Core\Interfaces\Job\JobProgressInterface;
 use Arikaim\Core\Interfaces\Job\SaveJobConfigInterface;
+use Arikaim\Core\Interfaces\Job\JobLogInterface;
 use Arikaim\Core\Interfaces\QueueInterface;
+use Arikaim\Core\Interfaces\LoggerInterface;
 use Closure;
 
 /**
@@ -35,13 +37,21 @@ class QueueManager implements QueueInterface
     protected $driver;
 
     /**
+     * Logger
+     *
+     * @var LoggerInterface|null
+     */
+    protected $logger;
+
+    /**
      * Constructor
      *
      * @param QueueStorageInterface $driver
      */
-    public function __construct(QueueStorageInterface $driver)
+    public function __construct(QueueStorageInterface $driver, ?LoggerInterface $logger = null)
     {       
-        $this->setDriver($driver);           
+        $this->setDriver($driver);       
+        $this->logger = $logger;    
     }
 
     /**
@@ -177,7 +187,12 @@ class QueueManager implements QueueInterface
      */
     public function getJob($id): ?array
     {
-        return $this->driver->getJob($id);    
+        $job = $this->driver->getJob($id);    
+        if (empty($job) == false) {
+            $job['config'] = (empty($job['config']) == false) ? \json_decode($job['config'],true) : null;
+        }
+        
+        return $job;
     }
 
     /**
@@ -325,12 +340,19 @@ class QueueManager implements QueueInterface
             $this->driver->updateExecutionStatus($job);
             
             if ($job instanceof SaveJobConfigInterface) {
+                // save job config properties after executing job
                 $config = $job->getConfigProperties()->toArray();
-                $id = (empty($job->getId()) == true) ? $job->getName() : $job->getId();
+                $id = (empty($job->getId()) == true) ? $job->getName() : $job->getId();              
                 $this->saveJobConfig($id,$config);
             }
+            if (($job instanceof JobLogInterface) && (empty($this->logger) == false)) {
+                $this->logger->info($job->getLogMessage(),['job-name' => $job->getName() ]);
+            }
         } catch (\Exception $e) {
-            $job->addError($e->getMessage());          
+            $job->addError($e->getMessage());     
+            if (($job instanceof JobLogInterface) && (empty($this->logger) == false)) {              
+                $this->logger->error($e->getMessage(),$job->toArray());                
+            }     
         }
       
         return $job;

@@ -39,6 +39,26 @@ trait JobProgress
     }
 
     /**
+     * Get on job progress callback
+     *
+     * @return Closure|null
+     */
+    protected function getOnJobProgress()
+    {
+        return $this->onJobProgress ?? null;
+    }
+    
+    /**
+     * Get on job progress error
+     *
+     * @return Closure|null
+     */
+    protected function getOnJobProgressError()
+    {
+        return $this->onJobProgressError ?? null;
+    }
+
+    /**
      * Run job progress callback 
      *
      * @param mixed|null $param
@@ -46,7 +66,7 @@ trait JobProgress
      */
     public function jobProgress($param): void
     {
-        if (\is_callable($this->onJobProgress) == true) {
+        if (\is_callable($this->getOnJobProgress()) == true) {
             ($this->onJobProgress)($param);           
         }
     } 
@@ -59,7 +79,7 @@ trait JobProgress
     */
     public function jobProgressError($param): void
     {
-        if (\is_callable($this->onJobProgressError) == true) {
+        if (\is_callable($this->getOnJobProgressError()) == true) {
             ($this->onJobProgressError)($param);           
         }
     } 
