@@ -65,11 +65,13 @@ class Cron
     /**
      * Add cron entry for scheduler
      *
-     * @return mixed
+     * @return bool
      */
-    public function install()
+    public function install(): bool
     {    
-        return $this->addJob(Self::getCronCommand());
+        $this->addJob(Self::getCronCommand());
+
+        return $this->hasJob(Self::getCronCommand());
     }
 
     /**
