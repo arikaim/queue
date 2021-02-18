@@ -131,7 +131,7 @@ class Cron
         $output = Process::run('crontab -l');
 
         $output = (empty($output) == true) ? [] : $output;
-        $jobs = Arrays::toArray($output);
+        $jobs = (\is_array($output) == false) ? Arrays::toArray($output) : $output;
     
         return ($this->hasJobs($jobs) == true) ? $jobs : [];
     }
