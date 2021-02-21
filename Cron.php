@@ -38,6 +38,19 @@ class Cron
     }
     
     /**
+     * Run cron command
+     *
+     * @return mixed
+     */
+    public static function runCronCommand()
+    {
+        $php = (Process::findPhp() === false) ? 'php' : Process::findPhp();
+        $command = $php . ' ' . ROOT_PATH . BASE_PATH . '/cli scheduler';  
+
+        return Process::run($command);
+    }
+
+    /**
      * Retrun true if command is crontab command
      *
      * @param string $command
