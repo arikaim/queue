@@ -73,6 +73,13 @@ abstract class Job implements JobInterface
     protected $queue = null;
 
     /**
+     * Job params
+     *
+     * @var array
+     */
+    protected $params = [];
+
+    /**
      * Job code
      *
      * @return mixed
@@ -85,7 +92,7 @@ abstract class Job implements JobInterface
      * @param string|null $extension
      * @param string|null $name
      */
-    public function __construct(?string $extension = null, ?string $name = null)
+    public function __construct(?string $extension = null, ?string $name = null, array $params = [])
     {
         $this->setExtensionName($extension);
         $this->setName($name);
@@ -93,6 +100,7 @@ abstract class Job implements JobInterface
         $this->dateExecuted = null;
         $this->status = JobInterface::STATUS_CREATED;
         $this->errors = [];
+        $this->params = $params;
         $this->id = null;
     }
 

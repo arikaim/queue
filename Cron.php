@@ -11,11 +11,12 @@ namespace Arikaim\Core\Queue;
 
 use Arikaim\Core\System\Process;
 use Arikaim\Core\Collection\Arrays;
+use Arikaim\Core\Interfaces\QueueWorkerInterface;
 
 /**
  * Cron jobs 
  */
-class Cron
+class Cron implements QueueWorkerInterface
 {
     /**
      * Cron command 
@@ -23,6 +24,26 @@ class Cron
      * @var string
      */
     private static $command = 'cli scheduler >> /dev/null 2>&1';
+
+    /**
+     * Get title
+     *    
+     * @return string
+     */
+    public function getTitle(): string
+    {
+        return 'Cron Scheduler';
+    }
+
+    /**
+     * Get description
+     *    
+     * @return string|null
+     */
+    public function getDescription(): ?string
+    {
+        return 'Crontab queue worker';
+    }
 
     /**
      * Get cron command
@@ -70,9 +91,9 @@ class Cron
      */
     public function reInstall()
     {    
-        $this->unInstall();
+        $this->stop();
 
-        return $this->install();
+        return $this->run();
     }
 
     /**
@@ -80,7 +101,7 @@ class Cron
      *
      * @return bool
      */
-    public function install(): bool
+    public function run(): bool
     {    
         $this->addJob(Self::getCronCommand());
 
@@ -92,7 +113,7 @@ class Cron
      *
      * @return mixed
      */
-    public function unInstall()
+    public function stop(): bool
     {
         $jobs = $this->getJobs();
         foreach ($jobs as $command) {
@@ -101,7 +122,7 @@ class Cron
             }
         }
 
-        return !$this->isInstalled();
+        return !$this->isRunning();
     }
 
     /**
@@ -109,7 +130,7 @@ class Cron
      *
      * @return boolean
      */
-    public function isInstalled(): bool
+    public function isRunning(): bool
     {
         $jobs = $this->getJobs();
         foreach ($jobs as $command) {
@@ -235,13 +256,11 @@ class Cron
      *
      * @return array
      */
-    public function getServiceDetails(): array
+    public function getDetails(): array
     {
         return [
-            'name'       => 'Cron',
-            'installed'  => $this->isInstalled(),
-            'jobs'       => $this->getJobs(),
-            'user'       => Process::getCurrentUser()['name']
+            'command' => $this->getCronCommand(),          
+            'user'    => Process::getCurrentUser()['name']
         ];
     }
 }

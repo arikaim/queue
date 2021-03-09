@@ -22,7 +22,10 @@ use Arikaim\Core\Interfaces\Job\SaveJobConfigInterface;
 use Arikaim\Core\Interfaces\Job\JobLogInterface;
 use Arikaim\Core\Interfaces\QueueInterface;
 use Arikaim\Core\Interfaces\LoggerInterface;
+use Arikaim\Core\Interfaces\QueueWorkerInterface;
+
 use Closure;
+use Exception;
 
 /**
  * Queue manager
@@ -55,13 +58,29 @@ class QueueManager implements QueueInterface
     }
 
     /**
-     * Create cron scheduler
+     * Create worker manager
      *
-     * @return object
+     * @param string|null $name
+     * @param array|null $args
+     * @return \Arikaim\Core\Interfaces\QueueWorkerInterface|null;
      */
-    public function createScheduler()
+    public function createWorkerManager(?string $name = null, ?array $args = null)
     {
-        return new Cron();
+        if (empty($name) == true || $name == 'cron') {
+            return new Cron();
+        }
+        
+        $manager = Factory::createInstance($name,$args);
+        if (\is_null($manager) == true) {
+            throw new Exception('Not valid queue worker class',1);
+            return null;
+        }
+        if (($manager instanceof QueueWorkerInterface) == false) {
+            throw new Exception('Not valid queue worker class',1);
+            return null;
+        }
+
+        return $manager;
     }
 
     /**
@@ -108,15 +127,16 @@ class QueueManager implements QueueInterface
     }
 
     /**
-     * Create job obj from jobs queue
+     * Create job obj
      *
-     * @param string|integer $name
+     * @param string|integer $name Job class or name
      * @param string|null $extension
+     * @param array $params
      * @return JobInterface|null
      */
-    public function create($name,?string $extension = null): ?JobInterface
-    {
-        $job = Factory::createJob($name,$extension);
+    public function create($name, ?string $extension = null, array $params = []): ?JobInterface
+    {       
+        $job = Factory::createJob($name,$extension,null,$params);
         if (empty($job) == true) {
             // load from db
             $jobInfo = $this->getJob($name);
@@ -188,7 +208,7 @@ class QueueManager implements QueueInterface
     public function getJob($id): ?array
     {
         $job = $this->driver->getJob($id);    
-        if (empty($job) == false) {
+        if (empty($job) == false && \is_array($job['config']) == false) {
             $job['config'] = (empty($job['config']) == false) ? \json_decode($job['config'],true) : null;
         }
         
