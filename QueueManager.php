@@ -260,7 +260,7 @@ class QueueManager implements QueueInterface
      * @param bool $disabled
      * @return bool
      */
-    public function addJob(JobInterface $job,?string $extension = null,bool $disabled = false): bool
+    public function addJob(JobInterface $job, ?string $extension = null, bool $disabled = false): bool
     {       
         $config = null;
         if ($job instanceof ConfigPropertiesInterface) {
@@ -365,6 +365,7 @@ class QueueManager implements QueueInterface
                 $id = (empty($job->getId()) == true) ? $job->getName() : $job->getId();              
                 $this->saveJobConfig($id,$config);
             }
+
             if (($job instanceof JobLogInterface) && (empty($this->logger) == false)) {
                 $this->logger->info($job->getLogMessage(),['job-name' => $job->getName() ]);
             }
