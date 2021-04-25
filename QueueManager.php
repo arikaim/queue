@@ -22,7 +22,7 @@ use Arikaim\Core\Interfaces\Job\SaveJobConfigInterface;
 use Arikaim\Core\Interfaces\Job\JobLogInterface;
 use Arikaim\Core\Interfaces\QueueInterface;
 use Arikaim\Core\Interfaces\LoggerInterface;
-use Arikaim\Core\Interfaces\QueueWorkerInterface;
+use Arikaim\Core\Interfaces\WorkerManagerInterface;
 
 use Closure;
 use Exception;
@@ -62,7 +62,7 @@ class QueueManager implements QueueInterface
      *
      * @param string|null $name
      * @param array|null $args
-     * @return \Arikaim\Core\Interfaces\QueueWorkerInterface|null;
+     * @return \Arikaim\Core\Interfaces\WorkerManagerInterface|null;
      */
     public function createWorkerManager(?string $name = null, ?array $args = null)
     {
@@ -75,7 +75,7 @@ class QueueManager implements QueueInterface
             throw new Exception('Not valid queue worker class',1);
             return null;
         }
-        if (($manager instanceof QueueWorkerInterface) == false) {
+        if (($manager instanceof WorkerManagerInterface) == false) {
             throw new Exception('Not valid queue worker class',1);
             return null;
         }
@@ -129,7 +129,7 @@ class QueueManager implements QueueInterface
     /**
      * Create job obj
      *
-     * @param string|integer $name Job class or name
+     * @param string|int $name Job class or name
      * @param string|null $extension
      * @param array $params
      * @return JobInterface|null
@@ -147,6 +147,24 @@ class QueueManager implements QueueInterface
         }
         
         return $job;
+    }
+
+    /**
+     * Run job
+     *
+     * @param string|int $name Job class or name
+     * @param string|null $extension
+     * @param array $params
+     * @return JobInterface|false
+    */
+    public function execute($name, ?string $extension = null, array $params = [])
+    {
+        $job = $this->create($name,$extension,$params);
+        if (\is_object($job) == true) {
+            return $this->executeJob($job);
+        }
+
+        return false;
     }
 
     /**
@@ -253,7 +271,25 @@ class QueueManager implements QueueInterface
     }
 
     /**
-     * Register job
+     * Push job to queue
+     *
+     * @param string|int $name
+     * @param string|null $extension
+     * @param array $params
+     * @return bool
+     */
+    public function push($name, ?string $extension = null, array $params = []): bool
+    {
+        $job = $this->create($name,$extension,$params);
+        if (\is_object($job) == false) {
+            return false;
+        }
+
+        return $this->addJob($job,$extension);
+    }
+
+    /**
+     * Add job to queue
      *
      * @param JobInterface $job
      * @param string|null $extension
@@ -323,7 +359,7 @@ class QueueManager implements QueueInterface
      * @param Closure|null $onJobProgressError
      * @return JobInterface|null
      */
-    public function run($name,?Closure $onJobProgress = null,?Closure $onJobProgressError = null): ?JobInterface
+    public function run($name, ?Closure $onJobProgress = null, ?Closure $onJobProgressError = null): ?JobInterface
     {
         if (\is_object($name) == false) {
             $job = $this->create($name);
@@ -343,7 +379,7 @@ class QueueManager implements QueueInterface
      * @param Closure|null $onJobProgressError
      * @return JobInterface|null
     */
-    public function executeJob(JobInterface $job,?Closure $onJobProgress = null,?Closure $onJobProgressError = null): ?JobInterface
+    public function executeJob(JobInterface $job, ?Closure $onJobProgress = null, ?Closure $onJobProgressError = null): ?JobInterface
     {
         if ($job instanceof JobProgressInterface) {
             $job->onJobProgress($onJobProgress);

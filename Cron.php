@@ -11,12 +11,12 @@ namespace Arikaim\Core\Queue;
 
 use Arikaim\Core\System\Process;
 use Arikaim\Core\Collection\Arrays;
-use Arikaim\Core\Interfaces\QueueWorkerInterface;
+use Arikaim\Core\Interfaces\WorkerManagerInterface;
 
 /**
  * Cron jobs 
  */
-class Cron implements QueueWorkerInterface
+class Cron implements WorkerManagerInterface
 {
     /**
      * Cron command 
@@ -24,6 +24,26 @@ class Cron implements QueueWorkerInterface
      * @var string
      */
     private static $command = 'cli scheduler >> /dev/null 2>&1';
+
+    /**
+     * Get host
+     *
+     * @return string
+    */
+    public function getPort(): string
+    {
+        return '';
+    }
+
+    /**
+     * Get port
+     *
+     * @return string
+    */
+    public function getHost(): string
+    {
+        return '';
+    }
 
     /**
      * Get title

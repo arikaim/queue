@@ -91,6 +91,7 @@ abstract class Job implements JobInterface
      *
      * @param string|null $extension
      * @param string|null $name
+     * @param array $params
      */
     public function __construct(?string $extension = null, ?string $name = null, array $params = [])
     {
