@@ -10,6 +10,7 @@
 namespace Arikaim\Core\Queue\Jobs;
 
 use Arikaim\Core\Interfaces\Job\JobInterface;
+use Arikaim\Core\Utils\Utils;
 
 /**
  * Base class for all jobs
@@ -103,6 +104,17 @@ abstract class Job implements JobInterface
         $this->errors = [];
         $this->params = $params;
         $this->id = null;
+
+        $this->init();
+    }
+
+    /**
+     * Init job
+     *
+     * @return void
+     */
+    public function init(): void
+    {        
     }
 
     /**
@@ -250,7 +262,7 @@ abstract class Job implements JobInterface
      */
     public function getName(): ?string
     {
-        return $this->name;
+        return (empty($this->name) == true) ? Utils::getBaseClassName($this) : $this->name;
     }
 
     /**

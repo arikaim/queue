@@ -15,12 +15,12 @@ use Arikaim\Core\Utils\DateTime;
 use Arikaim\Core\Utils\TimeInterval;
 use Arikaim\Core\Queue\Jobs\Job;
 use Arikaim\Core\Interfaces\Job\JobInterface;
-use Arikaim\Core\Interfaces\Job\RecuringJobInterface;
+use Arikaim\Core\Interfaces\Job\RecurringJobInterface;
 
 /**
  * Base class for all Recurring jobs
  */
-abstract class RecuringJob extends Job implements JobInterface, RecuringJobInterface
+abstract class RecuringJob extends Job implements JobInterface, RecurringJobInterface
 {
     /**
      * Recuring interval
@@ -38,8 +38,6 @@ abstract class RecuringJob extends Job implements JobInterface, RecuringJobInter
     public function __construct(?string $extension = null, ?string $name = null)
     {
         parent::__construct($extension,$name);
-
-        $this->interval = null;
     }
 
     /**
@@ -50,7 +48,7 @@ abstract class RecuringJob extends Job implements JobInterface, RecuringJobInter
     public function toArray(): array
     {
         $result = parent::toArray();
-        $result['recuring_interval'] = $this->getRecuringInterval();
+        $result['recuring_interval'] = $this->setRecurringInterval();
         $result['next_run_date'] = $this->getDueDate();
         
         return $result;
@@ -112,20 +110,20 @@ abstract class RecuringJob extends Job implements JobInterface, RecuringJobInter
     /**
      * RecuringJobInterface implementation function
      *
-     * @return string
+     * @return string|null
      */
-    public function getRecuringInterval(): string
+    public function getRecurringInterval(): ?string
     {
         return $this->interval;
     }
 
     /**
-     * Set recuring interval
+     * Set recurring interval
      *
      * @param string $interval
      * @return void
      */
-    public function setRecuringInterval(string $interval): void
+    public function setRecurringInterval(string $interval): void
     {
         $this->interval = $interval;
     }

@@ -24,7 +24,7 @@ abstract class ScheduledJob extends Job implements ScheduledJobInterface, JobInt
      *
      * @var integer
      */
-    protected $scheduleTime = null;
+    protected $scheduleTime = 0;
  
     /**
      * Constructor
@@ -36,7 +36,7 @@ abstract class ScheduledJob extends Job implements ScheduledJobInterface, JobInt
     {
         parent::__construct($extension,$name);
 
-        $this->scheduleTime = null;
+        $this->scheduleTime = 0;
     }
 
     /**

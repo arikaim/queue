@@ -15,7 +15,7 @@ use Arikaim\Core\Queue\Cron;
 use Arikaim\Core\Interfaces\ConfigPropertiesInterface;
 use Arikaim\Core\Interfaces\Job\QueueStorageInterface;
 use Arikaim\Core\Interfaces\Job\JobInterface;
-use Arikaim\Core\Interfaces\Job\RecuringJobInterface;
+use Arikaim\Core\Interfaces\Job\RecurringJobInterface;
 use Arikaim\Core\Interfaces\Job\ScheduledJobInterface;
 use Arikaim\Core\Interfaces\Job\JobProgressInterface;
 use Arikaim\Core\Interfaces\Job\SaveJobConfigInterface;
@@ -193,8 +193,8 @@ class QueueManager implements QueueInterface
         if ($job instanceof ScheduledJobInterface) {
             $job->setScheduleTime($data['schedule_time'] ?? 0);
         }
-        if ($job instanceof RecuringJobInterface) {
-            $job->setRecuringInterval($data['recuring_interval'] ?? '');
+        if ($job instanceof RecurringJobInterface) {
+            $job->setRecurringInterval($data['recuring_interval'] ?? '');
         }
      
         if ($job instanceof ConfigPropertiesInterface) {
@@ -294,12 +294,21 @@ class QueueManager implements QueueInterface
      * @param JobInterface $job
      * @param string|null $extension
      * @param bool $disabled
+     * @param string|null $recuringInterval
+     * @param int|null $scheduleTime
+     * @param array|null $config
      * @return bool
      */
-    public function addJob(JobInterface $job, ?string $extension = null, bool $disabled = false): bool
-    {       
-        $config = null;
-        if ($job instanceof ConfigPropertiesInterface) {
+    public function addJob(
+        JobInterface $job, 
+        ?string $extension = null, 
+        bool $disabled = false,
+        ?string $recuringInterval = null,
+        ?int $scheduleTime = null,
+        ?array $config = null
+    ): bool
+    {             
+        if ($job instanceof ConfigPropertiesInterface && \is_array($config) == false) {
             $config = $job->createConfigProperties();
         }
        
@@ -309,8 +318,8 @@ class QueueManager implements QueueInterface
             'handler_class'     => \get_class($job),         
             'extension_name'    => $extension ?? $job->getExtensionName(),
             'status'            => ($disabled == false) ? JobInterface::STATUS_PENDING : JobInterface::STATUS_SUSPENDED,
-            'recuring_interval' => ($job instanceof RecuringJobInterface) ? $job->getRecuringInterval() : null,
-            'schedule_time'     => ($job instanceof ScheduledJobInterface) ? $job->getScheduleTime() : null,
+            'recuring_interval' => ($job instanceof RecurringJobInterface) ? $job->getRecurringInterval() : $recuringInterval,
+            'schedule_time'     => ($job instanceof ScheduledJobInterface) ? $job->getScheduleTime() : $scheduleTime,
             'config'            => (\is_array($config) == true) ? \json_encode($config) : null,
             'uuid'              => $job->getId()
         ];
