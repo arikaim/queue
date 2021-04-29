@@ -225,7 +225,8 @@ class QueueManager implements QueueInterface
      */
     public function getJob($id): ?array
     {
-        $job = $this->driver->getJob($id);    
+        $job = $this->driver->getJob($id);  
+     
         if (empty($job) == false && \is_array($job['config']) == false) {
             $job['config'] = (empty($job['config']) == false) ? \json_decode($job['config'],true) : null;
         }

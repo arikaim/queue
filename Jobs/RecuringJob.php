@@ -48,7 +48,7 @@ abstract class RecuringJob extends Job implements JobInterface, RecurringJobInte
     public function toArray(): array
     {
         $result = parent::toArray();
-        $result['recuring_interval'] = $this->setRecurringInterval();
+        $result['recuring_interval'] = $this->getRecurringInterval();
         $result['next_run_date'] = $this->getDueDate();
         
         return $result;
@@ -108,7 +108,7 @@ abstract class RecuringJob extends Job implements JobInterface, RecurringJobInte
     }
 
     /**
-     * RecuringJobInterface implementation function
+     * RecurringJobInterface implementation function
      *
      * @return string|null
      */

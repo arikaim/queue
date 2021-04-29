@@ -10,13 +10,13 @@
 namespace Arikaim\Core\Queue\Jobs;
 
 use Arikaim\Core\Queue\Jobs\RecuringJob;
-use Arikaim\Core\Interfaces\Job\RecuringJobInterface;
+use Arikaim\Core\Interfaces\Job\RecurringJobInterface;
 use Arikaim\Core\Interfaces\Job\JobInterface;
 
 /**
  * Cron job
  */
-class CronJob extends RecuringJob implements RecuringJobInterface, JobInterface
+class CronJob extends RecuringJob implements RecurringJobInterface, JobInterface
 {
     /**
      * Constructor
@@ -37,7 +37,7 @@ class CronJob extends RecuringJob implements RecuringJobInterface, JobInterface
      * @return CronJob
      */
     public function setInterval(string $interval) {
-        $this->setRecuringInterval($interval);
+        $this->setRecurringInterval($interval);
 
         return $this;
     }
