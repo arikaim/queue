@@ -20,7 +20,7 @@ use Arikaim\Core\Interfaces\Job\RecurringJobInterface;
 /**
  * Base class for all Recurring jobs
  */
-abstract class RecuringJob extends Job implements JobInterface, RecurringJobInterface
+abstract class RecurringJob extends Job implements JobInterface, RecurringJobInterface
 {
     /**
      * Recuring interval
@@ -34,10 +34,11 @@ abstract class RecuringJob extends Job implements JobInterface, RecurringJobInte
      *
      * @param string|null $extension
      * @param string|null $name
+     * @param array $params
      */
-    public function __construct(?string $extension = null, ?string $name = null)
+    public function __construct(?string $extension = null, ?string $name = null, array $params = [])
     {
-        parent::__construct($extension,$name);
+        parent::__construct($extension,$name,$params);
     }
 
     /**

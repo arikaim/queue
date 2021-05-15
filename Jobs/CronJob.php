@@ -9,37 +9,27 @@
 */
 namespace Arikaim\Core\Queue\Jobs;
 
-use Arikaim\Core\Queue\Jobs\RecuringJob;
+use Arikaim\Core\Queue\Jobs\RecurringJob;
 use Arikaim\Core\Interfaces\Job\RecurringJobInterface;
 use Arikaim\Core\Interfaces\Job\JobInterface;
 
 /**
  * Cron job
  */
-class CronJob extends RecuringJob implements RecurringJobInterface, JobInterface
+class CronJob extends RecurringJob implements RecurringJobInterface, JobInterface
 {
     /**
      * Constructor
      *
      * @param string|null $extension
      * @param string|null $name
+     * @param array $params
      */
-    public function __construct(?string $extension = null,?string $name = null)
+    public function __construct(?string $extension = null, ?string $name = null, array $params = [])
     {
-        parent::__construct($extension,$name);
+        parent::__construct($extension,$name,$params);
+        
         $this->interval = '* * * * *';
-    }
-
-    /**
-     * Set cron expression
-     *
-     * @param string $interval
-     * @return CronJob
-     */
-    public function setInterval(string $interval) {
-        $this->setRecurringInterval($interval);
-
-        return $this;
     }
 
     /**

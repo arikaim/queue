@@ -69,7 +69,7 @@ abstract class Job implements JobInterface
     /**
      * Queue name
      *
-     * @var string
+     * @var string|null
      */
     protected $queue = null;
 
@@ -107,6 +107,30 @@ abstract class Job implements JobInterface
 
         $this->init();
     }
+
+    /**
+     * Set param
+     *
+     * @param string $name
+     * @param mixed $value
+     * @return void
+     */
+    public function setParam(string $name, $value): void
+    {
+        $this->params[$name] = $value;
+    } 
+
+    /**
+     * Get param value
+     *
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getParam(string $name, $default = null)
+    {
+        return $this->params[$name] ?? $default;
+    } 
 
     /**
      * Init job
@@ -248,9 +272,9 @@ abstract class Job implements JobInterface
     /**
      * Get extension name
      *
-     * @return string
+     * @return string|null
      */
-    public function getExtensionName(): string 
+    public function getExtensionName(): ?string 
     {
         return $this->extension;
     }

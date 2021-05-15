@@ -196,7 +196,6 @@ class QueueManager implements QueueInterface
         if ($job instanceof RecurringJobInterface) {
             $job->setRecurringInterval($data['recuring_interval'] ?? '');
         }
-     
         if ($job instanceof ConfigPropertiesInterface) {
             $config = $data['config'] ?? [];
             $job->setConfigProperties($config);
