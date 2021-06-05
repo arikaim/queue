@@ -67,6 +67,13 @@ abstract class Job implements JobInterface
     protected $dateExecuted = null;
 
     /**
+     * Date added to queue
+     *
+     * @var int|null
+     */
+    protected $dateCreated = null;
+
+    /**
      * Queue name
      *
      * @var string|null
@@ -99,7 +106,7 @@ abstract class Job implements JobInterface
         $this->setExtensionName($extension);
         $this->setName($name);
         $this->setPriority(0);
-        $this->dateExecuted = null;
+        $this->dateExecuted = null;      
         $this->status = JobInterface::STATUS_CREATED;
         $this->errors = [];
         $this->params = $params;
@@ -153,7 +160,8 @@ abstract class Job implements JobInterface
             'name'           => $this->getName(),
             'priority'       => $this->getPriority(),
             'status'         => $this->getStatus(),
-            'date_executed'  => $this->getDateExecuted(),          
+            'date_executed'  => $this->getDateExecuted(),       
+            'date_created'   => $this->getDateCreated(),          
             'extension_name' => $this->getExtensionName(),
             'errors'         => $this->getErrors(),
             'handler_class'  => \get_class(),
@@ -195,11 +203,21 @@ abstract class Job implements JobInterface
     /**
      * Get execution timestamp
      *   
-     * @return int
+     * @return int|null
     */
     public function getDateExecuted(): ?int
     {
         return $this->dateExecuted;
+    }
+
+    /**
+     * Get date created
+     *
+     * @return integer|null
+     */
+    public function getDateCreated(): ?int
+    {
+        return $this->dateCreated;
     }
 
     /**
@@ -211,6 +229,17 @@ abstract class Job implements JobInterface
     public function setDateExecuted(?int $time): void
     {
         $this->dateExecuted = $time;
+    }
+
+    /**
+     * Set date pused to queue
+     *   
+     * @param int|null $time  timestamp
+     * @return void
+    */
+    public function setDateCreated(?int $time): void
+    {
+        $this->dateCreated = $time;
     }
 
     /**

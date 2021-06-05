@@ -62,11 +62,6 @@ abstract class RecurringJob extends Job implements JobInterface, RecurringJobInt
     */
     public function isDue(): bool
     {
-        $dateExecuted = $this->getDateExecuted();
-        if (empty($dateExecuted) == true) {         
-            return true;
-        }
-
         return ($this->getDueDate() <= DateTime::getTimestamp());
     } 
 

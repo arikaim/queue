@@ -188,6 +188,7 @@ class QueueManager implements QueueInterface
         $job->setPriority($data['priority'] ?? 0);
         $job->setExtensionName($data['extension_name'] ?? null);
         $job->setDateExecuted($data['date_executed'] ?? null);
+        $job->setDateCreated($data['date_created'] ?? null);
         $job->setQueue($data['queue'] ?? null);
 
         if ($job instanceof ScheduledJobInterface) {
