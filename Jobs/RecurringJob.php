@@ -74,11 +74,8 @@ abstract class RecurringJob extends Job implements JobInterface, RecurringJobInt
      */
     public static function getNextRunDate(string $interval,?int $dateLastExecution = null)
     {
-        if (empty($dateLastExecution) == true) {
-            $dateTime = DateTime::getDateTime();
-        } else {
-            $dateTime = DateTime::create('@' . (string)$dateLastExecution);
-        }
+        $dateLastExecution = empty($dateLastExecution) ? 0 : $dateLastExecution;       
+        $dateTime = DateTime::create('@' . (string)$dateLastExecution);
 
         if (CronExpression::isValidExpression($interval) == true) {
             return CronExpression::factory($interval)->getNextRunDate($dateTime,0,false,DateTime::getTimeZoneName())->getTimestamp();
