@@ -62,7 +62,7 @@ abstract class RecurringJob extends Job implements JobInterface, RecurringJobInt
     */
     public function isDue(): bool
     {
-        return ($this->getDueDate() <= DateTime::getTimestamp());
+        return ($this->getDueDate() <= DateTime::getCurrentTimestamp());
     } 
 
     /**
@@ -72,9 +72,9 @@ abstract class RecurringJob extends Job implements JobInterface, RecurringJobInt
      * @param int|null $dateLastExecution
      * @return integer|false
      */
-    public static function getNextRunDate(string $interval,?int $dateLastExecution = null)
+    public static function getNextRunDate(string $interval, ?int $dateLastExecution = null)
     {
-        $dateLastExecution = empty($dateLastExecution) ? 0 : $dateLastExecution;       
+        $dateLastExecution = empty($dateLastExecution) ? DateTime::getCurrentTimestamp() : $dateLastExecution;       
         $dateTime = DateTime::create('@' . (string)$dateLastExecution);
 
         if (CronExpression::isValidExpression($interval) == true) {
@@ -96,7 +96,7 @@ abstract class RecurringJob extends Job implements JobInterface, RecurringJobInt
      * @return integer
      */
     public function getDueDate()
-    {
+    {       
         return Self::getNextRunDate($this->interval,$this->getDateExecuted());
     }
 

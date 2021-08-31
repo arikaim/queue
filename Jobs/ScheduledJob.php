@@ -98,6 +98,6 @@ abstract class ScheduledJob extends Job implements ScheduledJobInterface, JobInt
             return false;
         }
 
-        return ($this->scheduleTime <= DateTime::getTimestamp());
+        return ($this->scheduleTime <= DateTime::getCurrentTimestamp());
     }
 }
