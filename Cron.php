@@ -26,6 +26,23 @@ class Cron implements WorkerManagerInterface
     private static $command = 'cli scheduler >> /dev/null 2>&1';
 
     /**
+     * Crontab interval
+     *
+     * @var string
+     */
+    private $interval = '5';
+
+    /**
+     * Constructor
+     *
+     * @param string $interval
+     */
+    public function __construct(string $interval = '5')
+    {
+        $this->interval = $interval;
+    }
+
+    /**
      * Get host
      *
      * @return string
@@ -118,14 +135,14 @@ class Cron implements WorkerManagerInterface
 
     /**
      * Add cron entry for scheduler
-     *
+     * 
      * @return bool
      */
     public function run(): bool
-    {    
-        $this->addJob(Self::getCronCommand());
+    {          
+        $this->addJob(Self::getCronCommand($this->interval));
 
-        return $this->hasJob(Self::getCronCommand());
+        return $this->hasJob(Self::getCronCommand($this->interval));
     }
 
     /**
@@ -273,14 +290,16 @@ class Cron implements WorkerManagerInterface
 
     /**
      * get cron details.
-     *
+     *  
      * @return array
      */
     public function getDetails(): array
     {
         return [
-            'command' => $this->getCronCommand(),          
-            'user'    => Process::getCurrentUser()['name']
+            'command'  => $this->getCronCommand($this->interval),  
+            'jobs'     => $this->getJobs(),  
+            'interval' => $this->interval,     
+            'user'     => Process::getCurrentUser()['name']
         ];
     }
 }
