@@ -33,7 +33,7 @@ abstract class ScheduledJob extends Job implements ScheduledJobInterface, JobInt
      * @param string|null $name
      * @param array $params
      */
-    public function __construct(?string $extension,?string $name = null, array $params = [])
+    public function __construct(?string $extension, ?string $name = null, array $params = [])
     {
         parent::__construct($extension,$name,$params);
 

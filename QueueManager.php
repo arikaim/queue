@@ -10,6 +10,7 @@
 namespace Arikaim\Core\Queue;
 
 use Arikaim\Core\Utils\Factory;
+use Arikaim\Core\Utils\Uuid;
 use Arikaim\Core\Queue\Cron;
 
 use Arikaim\Core\Interfaces\ConfigPropertiesInterface;
@@ -144,6 +145,11 @@ class QueueManager implements QueueInterface
             if (empty($job) == true) {
                 return null;
             }            
+        } else {
+            if ($job instanceof ConfigPropertiesInterface) {             
+                $properties = $job->createConfigProperties($params);
+                $job->setConfigProperties($properties);
+            }
         }
         
         return $job;
@@ -160,11 +166,8 @@ class QueueManager implements QueueInterface
     public function execute($name, ?string $extension = null, array $params = [])
     {
         $job = $this->create($name,$extension,$params);
-        if (\is_object($job) == true) {
-            return $this->executeJob($job);
-        }
-
-        return false;
+      
+        return (\is_object($job) == true) ? $this->executeJob($job) : false;        
     }
 
     /**
@@ -198,7 +201,7 @@ class QueueManager implements QueueInterface
             $job->setRecurringInterval($data['recuring_interval'] ?? '');
         }
         if ($job instanceof ConfigPropertiesInterface) {
-            $config = $data['config'] ?? [];
+            $config = $data['config'] ?? [];          
             $job->setConfigProperties($config);
         }
 
@@ -279,14 +282,17 @@ class QueueManager implements QueueInterface
      * @param array $params
      * @return bool
      */
-    public function push($name, ?string $extension = null, array $params = []): bool
+    public function push($name, ?string $extension = null, array $params = [], bool $uniqueName = false): bool
     {
         $job = $this->create($name,$extension,$params);
         if (\is_object($job) == false) {
             return false;
         }
-
-        return $this->addJob($job,$extension);
+        if ($uniqueName == true) {
+            $job->setName($name . '-' . Uuid::create());
+        }
+    
+        return (\is_object($job) == false) ? false : $this->addJob($job,$extension);       
     }
 
     /**
@@ -309,8 +315,8 @@ class QueueManager implements QueueInterface
         ?array $config = null
     ): bool
     {             
-        if ($job instanceof ConfigPropertiesInterface && \is_array($config) == false) {
-            $config = $job->createConfigProperties();
+        if ($job instanceof ConfigPropertiesInterface && \is_array($config) == false) {         
+            $config = $job->getConfigProperties($config)->toArray();
         }
        
         $info = [
@@ -374,11 +380,8 @@ class QueueManager implements QueueInterface
         if (\is_object($name) == false) {
             $job = $this->create($name);
         }
-        if (empty($job) == true) {
-            return null;
-        }
-
-        return $this->executeJob($job,$onJobProgress,$onJobProgressError);
+    
+        return (empty($job) == false) ? $this->executeJob($job,$onJobProgress,$onJobProgressError) : null;
     }
 
     /**
