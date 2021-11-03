@@ -144,11 +144,11 @@ class QueueManager implements QueueInterface
     ): ?JobInterface
     {       
         $job = Factory::createJob($class,$extension,$name,$params);
-        if (empty($job) == true) {
+        if (($job instanceof JobInterface) == false) {
             // load from db
             $jobInfo = $this->getJob($name);
             $job = $this->createJobFromArray($jobInfo);    
-            if (empty($job) == true) {
+            if (($job instanceof JobInterface) == false) {
                 return null;
             }            
         } else {
@@ -171,7 +171,7 @@ class QueueManager implements QueueInterface
     */
     public function execute($name, ?string $extension = null, array $params = [])
     {
-        $job = $this->create($name,$extension,$params);
+        $job = $this->create('',$name,$extension,$params);
       
         return (\is_object($job) == true) ? $this->executeJob($job) : false;        
     }
