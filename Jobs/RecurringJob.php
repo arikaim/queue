@@ -97,7 +97,9 @@ abstract class RecurringJob extends Job implements JobInterface, RecurringJobInt
      */
     public function getDueDate()
     {       
-        return Self::getNextRunDate($this->interval,$this->getDateExecuted());
+        $dateExecuted = (empty($this->getDateExecuted()) == true) ? $this->getDateCreated() : $this->getDateExecuted();
+
+        return Self::getNextRunDate($this->interval,$dateExecuted);
     }
 
     /**
