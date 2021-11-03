@@ -130,14 +130,20 @@ class QueueManager implements QueueInterface
     /**
      * Create job obj
      *
-     * @param string|int $name Job class or name
+     * @param string $class
+     * @param string|null $name Job name
      * @param string|null $extension
      * @param array $params
      * @return JobInterface|null
      */
-    public function create($name, ?string $extension = null, array $params = []): ?JobInterface
+    public function create(
+        string $class, 
+        ?string $name = null, 
+        ?string $extension = null, 
+        array $params = []
+    ): ?JobInterface
     {       
-        $job = Factory::createJob($name,$extension,null,$params);
+        $job = Factory::createJob($class,$extension,$name,$params);
         if (empty($job) == true) {
             // load from db
             $jobInfo = $this->getJob($name);
