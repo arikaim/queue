@@ -52,7 +52,7 @@ trait JobLog
     /**
      * Set log context
      *
-     * @param arra $context
+     * @param array $context
      * @return void
      */
     public function setLogContext(array $context): void
