@@ -233,7 +233,7 @@ class Cron implements WorkerManagerInterface
         }
     
         $jobs = $this->getJobs();
-        \array_push($jobs,$command);
+        $jobs[] = $command;
 
         return $this->addJobs($jobs);
     }

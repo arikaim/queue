@@ -11,7 +11,6 @@
     }],
     "homepage": "http://arikaim.com",
     "require": {
-        "php": ">=7.1",
         "arikaim/utils": "^1.0.0",
         "arikaim/interfaces": "^1.0.0",
         "arikaim/collection": "^1.0.0",

@@ -191,6 +191,9 @@ class QueueManager implements QueueInterface
     {      
         $class = $data['handler_class'] ?? null;
         $extension = $data['extension_name'] ?? null;
+        $scheduleTime = $data['schedule_time'] ?? 0;
+        $recuringInterval = $data['recuring_interval'] ?? '';
+
         $job = Factory::createJob($class,$extension);       
         if ($job == null) {
             return null;
@@ -206,10 +209,10 @@ class QueueManager implements QueueInterface
         $job->setQueue($data['queue'] ?? null);
 
         if ($job instanceof ScheduledJobInterface) {
-            $job->setScheduleTime($data['schedule_time'] ?? 0);
+            $job->setScheduleTime($scheduleTime);
         }
         if ($job instanceof RecurringJobInterface) {
-            $job->setRecurringInterval($data['recuring_interval'] ?? '');
+            $job->setRecurringInterval($recuringInterval);
         }
         if ($job instanceof ConfigPropertiesInterface) {
             $config = $data['config'] ?? [];          
@@ -293,7 +296,12 @@ class QueueManager implements QueueInterface
      * @param array $params
      * @return bool
      */
-    public function push($name, ?string $extension = null, array $params = [], bool $uniqueName = false): bool
+    public function push(
+        $name, 
+        ?string $extension = null, 
+        array $params = [], 
+        bool $uniqueName = false
+    ): bool
     {
         $job = $this->create($name,null,$extension,$params);
         if (\is_object($job) == false) {
@@ -303,7 +311,7 @@ class QueueManager implements QueueInterface
             $job->setName($name . '-' . Uuid::create());
         }
     
-        return (\is_object($job) == false) ? false : $this->addJob($job,$extension);       
+        return (\is_object($job) == false) ? false : $this->addJob($job,$extension,false);       
     }
 
     /**
