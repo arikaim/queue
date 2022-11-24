@@ -98,7 +98,7 @@ class Cron implements WorkerManagerInterface
     /**
      * Run cron command
      *
-     * @return mixed
+     * @return mixed|false
      */
     public static function runCronCommand()
     {
@@ -202,7 +202,7 @@ class Cron implements WorkerManagerInterface
         $output = Process::run('crontab -l');
 
         $output = (empty($output) == true) ? [] : $output;
-        $jobs = (\is_array($output) == false) ? Arrays::toArray($output) : $output;
+        $jobs = (\is_array($output) == false) ? \explode(',',$output) : $output;
     
         return ($this->hasJobs($jobs) == true) ? $jobs : [];
     }
@@ -224,7 +224,7 @@ class Cron implements WorkerManagerInterface
      * Add cron tab job
      *
      * @param string $command
-     * @return void
+     * @return mixed|false
      */
     public function addJob(string $command)
     {
@@ -242,7 +242,7 @@ class Cron implements WorkerManagerInterface
      * Add cron tab jobs
      *
      * @param array $commands
-     * @return mixed
+     * @return mixed|false
      */
     public function addJobs(array $commands) 
     {
@@ -280,9 +280,8 @@ class Cron implements WorkerManagerInterface
         if ($this->hasJob($command) == true) {
             $jobs = $this->getJobs();
             unset($jobs[\array_search($command,$jobs)]);
-            $this->addJobs($jobs);
 
-            return true;
+            return ($this->addJobs($jobs) !== false);
         }
         
         return true;
