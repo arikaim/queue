@@ -32,6 +32,13 @@ class Cron implements WorkerManagerInterface
      */
     private $interval = '5';
 
+    /** 
+     * Current user
+     * 
+     * @var string
+    */
+    private $currentUser;
+
     /**
      * Constructor
      *
@@ -40,6 +47,7 @@ class Cron implements WorkerManagerInterface
     public function __construct(string $interval = '5')
     {
         $this->interval = $interval;
+        $this->currentUser = Process::getCurrentUser()['name'];
     }
 
     /**
@@ -170,6 +178,7 @@ class Cron implements WorkerManagerInterface
     public function isRunning(): bool
     {
         $jobs = $this->getJobs();
+     
         foreach ($jobs as $command) {
             if (Self::isCronCommand($command) == true) {
                 return true;
@@ -199,11 +208,19 @@ class Cron implements WorkerManagerInterface
      */
     public function getJobs(): array 
     {
-        $output = Process::run('crontab -l');
-
+        $output = Process::run('crontab -l -u ' . $this->currentUser);
+      
         $output = (empty($output) == true) ? [] : $output;
-        $jobs = (\is_array($output) == false) ? \explode(',',$output) : $output;
-    
+        $lines = (\is_array($output) == false) ? \explode("\n",$output) : $output;
+        $jobs = [];
+
+        foreach ($lines as $line) {
+            $line = \trim($line);
+            if (empty($line) == false) {
+                $jobs[] = $line;
+            }          
+        }
+
         return ($this->hasJobs($jobs) == true) ? $jobs : [];
     }
 
@@ -246,14 +263,18 @@ class Cron implements WorkerManagerInterface
      */
     public function addJobs(array $commands) 
     {
-        foreach ($commands as $key => $command) {
+        foreach ($commands as $key => $command) {   
             if (empty($command) == true) {
                 unset($commands[$key]);
             }
         }
+       
         $text = \trim(Arrays::toString($commands));
         if (empty($text) == false) {
-            return Process::run('echo "'. $text .'" | crontab -');
+            $cmd = 'echo "'. $text .'" | crontab -u ' . $this->currentUser . ' - ';
+            $result = Process::run($cmd);
+            
+            return $result;
         } 
 
         return $this->removeAll();       
@@ -266,7 +287,7 @@ class Cron implements WorkerManagerInterface
      */
     public function removeAll()
     {
-        return Process::run('crontab -r');
+        return Process::run('crontab -r -u ' . $this->currentUser);
     }
 
     /**
@@ -298,7 +319,7 @@ class Cron implements WorkerManagerInterface
             'command'  => $this->getCronCommand($this->interval),  
             'jobs'     => $this->getJobs(),  
             'interval' => $this->interval,     
-            'user'     => Process::getCurrentUser()['name']
+            'user'     => $this->currentUser
         ];
     }
 }
