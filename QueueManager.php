@@ -178,7 +178,7 @@ class QueueManager implements QueueInterface
     {
         $job = $this->create('',$name,$extension,$params);
       
-        return (\is_object($job) == true) ? $this->executeJob($job) : false;        
+        return ($job != null) ? $this->executeJob($job) : false;        
     }
 
     /**
@@ -304,14 +304,14 @@ class QueueManager implements QueueInterface
     ): bool
     {
         $job = $this->create($name,null,$extension,$params);
-        if (\is_object($job) == false) {
+        if ($job == null) {
             return false;
         }
         if ($uniqueName == true) {
             $job->setName($name . '-' . Uuid::create());
         }
     
-        return (\is_object($job) == false) ? false : $this->addJob($job,$extension,false);       
+        return $this->addJob($job,$extension,false);       
     }
 
     /**
@@ -396,11 +396,9 @@ class QueueManager implements QueueInterface
      */
     public function run($name, ?Closure $onJobProgress = null, ?Closure $onJobProgressError = null): ?JobInterface
     {
-        if (\is_object($name) == false) {
-            $job = $this->create('',$name);
-        }
-    
-        return (empty($job) == false) ? $this->executeJob($job,$onJobProgress,$onJobProgressError) : null;
+        $job = (($name instanceof JobInterface) == false) ? $this->create('',$name) : $name;
+           
+        return ($job != null) ? $this->executeJob($job,$onJobProgress,$onJobProgressError) : null;
     }
 
     /**
