@@ -12,6 +12,7 @@ namespace Arikaim\Core\Queue;
 use Arikaim\Core\Utils\Factory;
 use Arikaim\Core\Utils\Uuid;
 use Arikaim\Core\Queue\Cron;
+use Arikaim\Core\Utils\Path;
 
 use Arikaim\Core\Interfaces\ConfigPropertiesInterface;
 use Arikaim\Core\Interfaces\Job\QueueStorageInterface;
@@ -125,6 +126,32 @@ class QueueManager implements QueueInterface
     public function deleteJobs(array $filter = []): bool
     {
         return $this->driver->deleteJobs($filter);
+    }
+
+    /**
+     * Create job instance from file in storage path
+     *
+     * @param string      $storagePath
+     * @param string|null $className
+     * @param array       $params
+     * @return JobInterface|null
+     */
+    public function createFromStorage(string $storagePath, ?string $className = null, array $params = []): ?JobInterface
+    {
+        $fileName = (empty($className) == false) ? $className . '.php' : '';
+        $path = Path::STORAGE_PATH . $storagePath . $fileName;
+
+        $job = (\file_exists($path) == true) ? require($path) : null;
+        if ($job instanceof JobInterface) {
+            return $job;
+        }
+        if (\class_exists($className ?? '') == false) {
+            return null;
+        }
+
+        $job = new $className(null,null,$params);
+
+        return ($job instanceof JobInterface) ? $job : null;
     }
 
     /**
