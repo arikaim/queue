@@ -10,17 +10,14 @@
 namespace Arikaim\Core\Queue;
 
 use Arikaim\Core\Utils\Factory;
-use Arikaim\Core\Utils\Uuid;
 use Arikaim\Core\Queue\Cron;
 use Arikaim\Core\Utils\Path;
 
-use Arikaim\Core\Interfaces\ConfigPropertiesInterface;
 use Arikaim\Core\Interfaces\Job\QueueStorageInterface;
 use Arikaim\Core\Interfaces\Job\JobInterface;
 use Arikaim\Core\Interfaces\Job\RecurringJobInterface;
 use Arikaim\Core\Interfaces\Job\ScheduledJobInterface;
 use Arikaim\Core\Interfaces\Job\JobProgressInterface;
-use Arikaim\Core\Interfaces\Job\SaveJobConfigInterface;
 use Arikaim\Core\Interfaces\Job\JobLogInterface;
 use Arikaim\Core\Interfaces\QueueInterface;
 use Arikaim\Core\Interfaces\LoggerInterface;
@@ -49,6 +46,13 @@ class QueueManager implements QueueInterface
     protected $logger;
 
     /**
+     * Jobs registry
+     *
+     * @var object|null
+     */
+    protected $jobsRegistry;
+
+    /**
      * Constructor
      *
      * @param QueueStorageInterface $driver
@@ -56,7 +60,22 @@ class QueueManager implements QueueInterface
     public function __construct(QueueStorageInterface $driver, ?LoggerInterface $logger = null)
     {       
         $this->setDriver($driver);       
-        $this->logger = $logger;    
+        $this->logger = $logger; 
+        $this->jobsRegistry = null;   
+    }
+
+    /**
+     * Get jobs registry
+     *
+     * @return object
+     */
+    public function jobsRegistry(): object
+    {
+        if ($this->jobsRegistry != null) {
+            $this->jobsRegistry;
+        } 
+
+        return $this->jobsRegistry = new \Arikaim\Core\Models\JobsRegistry();
     }
 
     /**
@@ -157,55 +176,26 @@ class QueueManager implements QueueInterface
     /**
      * Create job obj
      *
-     * @param string $class
-     * @param string|null $name Job name
+     * @param string $class  job class or name
      * @param string|null $extension
-     * @param array $params
+     * @param array|null $params
      * @return JobInterface|null
      */
-    public function create(
-        string $class, 
-        ?string $name = null, 
-        ?string $extension = null, 
-        array $params = []
-    ): ?JobInterface
+    public function create(string $class, ?array $params = null, ?string $extension = null): ?JobInterface
     {       
-        $job = Factory::createJob($class,$extension,$name,$params);
-        if (($job instanceof JobInterface) == false) {
-            // try name as class
-            $job = Factory::createJob($name,$extension,null,$params);
+        $job = Factory::createJob($class,$extension,$params ?? []);
+        if ($job instanceof JobInterface) {
+            return $job;
         }
 
-        if (($job instanceof JobInterface) == false) {
-            // load from db
-            $jobInfo = $this->getJob($name);
-            $job = $this->createJobFromArray($jobInfo);    
-            if (($job instanceof JobInterface) == false) {
-                return null;
-            }            
-        } else {
-            if ($job instanceof ConfigPropertiesInterface) {             
-                $properties = $job->createConfigProperties($params);
-                $job->setConfigProperties($properties);
-            }
-        }
-        
-        return $job;
-    }
-
-    /**
-     * Run job
-     *
-     * @param string|int $name Job class or name
-     * @param string|null $extension
-     * @param array $params
-     * @return JobInterface|false
-    */
-    public function execute($name, ?string $extension = null, array $params = [])
-    {
-        $job = $this->create('',$name,$extension,$params);
+        // create from registry
+        $model = $this->jobsRegistry()->findJob($class);
+        if ($model != null) {
+            $params = ($params == null) ? $model->options : $params;
+            $job = Factory::createJob($model->handler_class ?? '',$model->package_name,$params);
+        }            
       
-        return ($job != null) ? $this->executeJob($job) : false;        
+        return $job;
     }
 
     /**
@@ -220,8 +210,10 @@ class QueueManager implements QueueInterface
         $extension = $data['extension_name'] ?? null;
         $scheduleTime = $data['schedule_time'] ?? 0;
         $recuringInterval = $data['recuring_interval'] ?? '';
+        $config = $data['config'] ?? null;  
+        $config = ($config == null) ? $data['options'] ?? null : $config;
 
-        $job = Factory::createJob($class,$extension);       
+        $job = Factory::createJob($class,$extension,$config ?? []);       
         if ($job == null) {
             return null;
         }
@@ -241,24 +233,8 @@ class QueueManager implements QueueInterface
         if ($job instanceof RecurringJobInterface) {
             $job->setRecurringInterval($recuringInterval);
         }
-        if ($job instanceof ConfigPropertiesInterface) {
-            $config = $data['config'] ?? [];          
-            $job->setConfigProperties($config);
-        }
-
+       
         return $job;
-    }
-
-    /**
-     * Save job config
-     *
-     * @param string|int $id
-     * @param array $config
-     * @return boolean
-     */
-    public function saveJobConfig($id, array $config): bool
-    {
-        return $this->driver->saveJobConfig($id,$config);    
     }
 
     /**
@@ -269,13 +245,7 @@ class QueueManager implements QueueInterface
      */
     public function getJob($id): ?array
     {
-        $job = $this->driver->getJob($id);  
-     
-        if (empty($job) == false && \is_array($job['config']) == false) {
-            $job['config'] = (empty($job['config']) == false) ? \json_decode($job['config'],true) : null;
-        }
-        
-        return $job;
+        return $this->driver->getJob($id);         
     }
 
     /**
@@ -318,27 +288,23 @@ class QueueManager implements QueueInterface
     /**
      * Push job to queue
      *
-     * @param string|int $name
-     * @param string|null $extension
-     * @param array $params
+     * @param string $name  job name or class
+     * @param string|null $extension Extension package name
+     * @param array|null $params
      * @return bool
      */
     public function push(
-        $name, 
-        ?string $extension = null, 
-        array $params = [], 
-        bool $uniqueName = false
+        string $name, 
+        ?array $params = null,
+        ?string $extension = null        
     ): bool
     {
-        $job = $this->create($name,null,$extension,$params);
+        $job = $this->create($name,$params,$extension);
         if ($job == null) {
             return false;
         }
-        if ($uniqueName == true) {
-            $job->setName($name . '-' . Uuid::create());
-        }
     
-        return $this->addJob($job,$extension,false);       
+        return $this->addJob($job,$extension,false,null,null,$params);       
     }
 
     /**
@@ -361,10 +327,6 @@ class QueueManager implements QueueInterface
         ?array $config = null
     ): bool
     {             
-        if ($job instanceof ConfigPropertiesInterface && \is_array($config) == false) {         
-            $config = $job->getConfigProperties($config)->toArray();
-        }
-       
         $info = [
             'priority'          => $job->getPriority(),
             'name'              => $job->getName(),
@@ -373,7 +335,7 @@ class QueueManager implements QueueInterface
             'status'            => ($disabled == false) ? JobInterface::STATUS_PENDING : JobInterface::STATUS_SUSPENDED,
             'recuring_interval' => ($job instanceof RecurringJobInterface) ? $job->getRecurringInterval() : $recuringInterval,
             'schedule_time'     => ($job instanceof ScheduledJobInterface) ? $job->getScheduleTime() : $scheduleTime,
-            'config'            => (\is_array($config) == true) ? \json_encode($config) : null,
+            'config'            => ($config != null) ? \json_encode($config) : null,
             'uuid'              => $job->getId()
         ];
 
@@ -416,14 +378,22 @@ class QueueManager implements QueueInterface
     /**
      * Run job
      *
-     * @param JobInterface|string|int $name
+     * @param JobInterface|string $name Job class, name or job instance
+     * @param array|null $params job params
+     * @param string|null $extension  package extension name
      * @param Closure|null $onJobProgress
      * @param Closure|null $onJobProgressError
      * @return JobInterface|null
      */
-    public function run($name, ?Closure $onJobProgress = null, ?Closure $onJobProgressError = null): ?JobInterface
+    public function run(
+        $name, 
+        ?array $params = null,
+        ?string $extension = null, 
+        ?Closure $onJobProgress = null, 
+        ?Closure $onJobProgressError = null
+    ): ?JobInterface
     {
-        $job = (($name instanceof JobInterface) == false) ? $this->create('',$name) : $name;
+        $job = ($name instanceof JobInterface) ? $name : $this->create($name,$params,$extension);
            
         return ($job != null) ? $this->executeJob($job,$onJobProgress,$onJobProgressError) : null;
     }
@@ -452,13 +422,6 @@ class QueueManager implements QueueInterface
             $job->setStatus(JobInterface::STATUS_EXECUTED);          
             $this->driver->updateExecutionStatus($job);
             
-            if ($job instanceof SaveJobConfigInterface) {
-                // save job config properties after executing job
-                $config = $job->getConfigProperties()->toArray();
-                $id = (empty($job->getId()) == true) ? $job->getName() : $job->getId();              
-                $this->saveJobConfig($id,$config);
-            }
-
             if (($job instanceof JobLogInterface) && (empty($this->logger) == false)) {
                 $this->logger->info($job->getLogMessage(),['job-name' => $job->getName() ]);
             }

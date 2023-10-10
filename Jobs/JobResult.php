@@ -64,6 +64,18 @@ class JobResult
     }
 
     /**
+     * Get field value
+     *
+     * @param string $name
+     * @param mixed $default
+     * @return mixed
+     */
+    public function get(string $name, $default = null)
+    {
+        return $this->fields[$name] ?? $default;
+    }
+
+    /**
      * Get fields
      *
      * @return array

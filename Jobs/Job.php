@@ -11,12 +11,18 @@ namespace Arikaim\Core\Queue\Jobs;
 
 use Arikaim\Core\Interfaces\Job\JobInterface;
 use Arikaim\Core\Utils\Utils;
+use Arikaim\Core\Queue\Jobs\JobPropertiesDescriptor;
+use Arikaim\Core\Queue\Jobs\JobResult;
+
+use Arikaim\Core\Collection\Traits\Descriptor;
 
 /**
  * Base class for all jobs
  */
 abstract class Job implements JobInterface
 {
+    use Descriptor;
+
     /**
      * Unique job id 
      *
@@ -53,13 +59,6 @@ abstract class Job implements JobInterface
     protected $status = JobInterface::STATUS_CREATED;
 
     /**
-     * Execution errors
-     *
-     * @var array
-    */
-    protected $errors = [];
-
-    /**
      * Execution timestamp 
      *
      * @var int|null
@@ -88,6 +87,13 @@ abstract class Job implements JobInterface
     protected $params = [];
 
     /**
+     * Job result
+     *
+     * @var object
+     */
+    protected $result;
+
+    /**
      * Job code
      *
      * @return mixed
@@ -98,21 +104,40 @@ abstract class Job implements JobInterface
      * Constructor
      *
      * @param string|null $extension
-     * @param string|null $name
      * @param array $params
      */
-    public function __construct(?string $extension = null, ?string $name = null, array $params = [])
+    public function __construct(?string $extension = null, array $params = [])
     {
-        $this->setExtensionName($extension);
-        $this->setName($name);
+        $this->setExtensionName($extension);      
         $this->setPriority(0);
         $this->dateExecuted = null;      
-        $this->status = JobInterface::STATUS_CREATED;
-        $this->errors = [];
+        $this->status = JobInterface::STATUS_CREATED;       
         $this->params = $params;
         $this->id = null;
-
+        $this->setDescriptorClass(JobPropertiesDescriptor::class);
+        $this->result = new JobResult();
         $this->init();
+    }
+
+    /**
+     * Get hjob params
+     *
+     * @return array
+     */
+    public function getParams(): array
+    {
+        return $this->params;
+    }
+    
+    /**
+     * Set job params
+     *
+     * @param array $params
+     * @return void
+     */
+    public function setParams(array $params): void
+    {
+        $this->params = $params;
     }
 
     /**
@@ -170,13 +195,23 @@ abstract class Job implements JobInterface
     }
 
     /**
+     * Get job result object
+     *
+     * @return object
+     */
+    public function result(): object
+    {
+        return $this->result;
+    }
+
+    /**
      * Get execution errors
      *
      * @return array
      */
     public function getErrors(): array
     {
-        return $this->errors;
+        return [$this->result->getError()];
     }
 
     /**
@@ -187,7 +222,7 @@ abstract class Job implements JobInterface
      */
     public function addError(string $errorMessage): void
     {
-        $this->errors[] = $errorMessage;
+        $this->result->error($errorMessage);
     }
 
     /**
@@ -197,7 +232,7 @@ abstract class Job implements JobInterface
      */
     public function hasSuccess(): bool
     {
-        return (\count($this->errors) == 0);
+        return ($this->result->hasError() == false);
     }
 
     /**
@@ -261,7 +296,7 @@ abstract class Job implements JobInterface
     public function setStatus(int $status): void
     {
         if ($status == JobInterface::STATUS_CREATED) {
-            $this->errors = [];
+            $this->result->error(null);
         }
         $this->status = $status;
     }
