@@ -210,8 +210,7 @@ class QueueManager implements QueueInterface
         $extension = $data['extension_name'] ?? null;
         $scheduleTime = $data['schedule_time'] ?? 0;
         $recuringInterval = $data['recuring_interval'] ?? '';
-        $config = $data['config'] ?? null;  
-        $config = ($config == null) ? $data['options'] ?? null : $config;
+        $config = $data['options'] ?? null;
 
         $job = Factory::createJob($class,$extension,$config ?? []);       
         if ($job == null) {
@@ -331,14 +330,22 @@ class QueueManager implements QueueInterface
         ?array $config = null
     ): bool
     {             
+        if (empty($scheduleTime) == true) {
+            $scheduleTime = ($job instanceof ScheduledJobInterface) ? $job->getScheduleTime() : $scheduleTime;
+        }
+
+        if (empty($recuringInterval) == true) {
+            $recuringInterval = ($job instanceof RecurringJobInterface) ? $job->getRecurringInterval() : $recuringInterval;
+        }
+
         return $this->driver->addJob([
             'priority'          => $job->getPriority(),
             'name'              => $job->getName(),
             'handler_class'     => \get_class($job),         
             'extension_name'    => $extension ?? $job->getExtensionName(),
             'status'            => ($disabled == false) ? JobInterface::STATUS_PENDING : JobInterface::STATUS_SUSPENDED,
-            'recuring_interval' => ($job instanceof RecurringJobInterface) ? $job->getRecurringInterval() : $recuringInterval,
-            'schedule_time'     => ($job instanceof ScheduledJobInterface) ? $job->getScheduleTime() : $scheduleTime,
+            'recuring_interval' => $recuringInterval,
+            'schedule_time'     => $scheduleTime,
             'config'            => ($config != null) ? \json_encode($config) : null,
             'uuid'              => $job->getId()
         ]);      
@@ -420,9 +427,12 @@ class QueueManager implements QueueInterface
         }
 
         try {
-            $job->execute();
-            $job->setStatus(JobInterface::STATUS_EXECUTED);          
-            $this->driver->updateExecutionStatus($job);
+    
+            $job->execute();    
+            if ($job->hasSuccess() == true) {
+                // set status
+                $this->driver->updateExecutionStatus($job);
+            } 
             
             if (($job instanceof JobLogInterface) && (empty($this->logger) == false)) {
                 $this->logger->info($job->getLogMessage(),['job-name' => $job->getName() ]);
@@ -431,7 +441,7 @@ class QueueManager implements QueueInterface
             $job->addError($e->getMessage());     
             if (($job instanceof JobLogInterface) && (empty($this->logger) == false)) {              
                 $this->logger->error($e->getMessage(),$job->toArray());                
-            }     
+            } 
         }
       
         return $job;

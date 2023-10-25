@@ -10,18 +10,26 @@
 namespace Arikaim\Core\Queue\Jobs;
 
 use Arikaim\Core\Interfaces\Job\JobInterface;
+use Arikaim\Core\Interfaces\Job\RecurringJobInterface;
+use Arikaim\Core\Interfaces\Job\ScheduledJobInterface;
 use Arikaim\Core\Utils\Utils;
 use Arikaim\Core\Queue\Jobs\JobPropertiesDescriptor;
 use Arikaim\Core\Queue\Jobs\JobResult;
+use Arikaim\Core\Utils\DateTime;
 
 use Arikaim\Core\Collection\Traits\Descriptor;
+use Arikaim\Core\Queue\Traits\Recurring;
+use Arikaim\Core\Queue\Traits\Scheduled;
 
 /**
  * Base class for all jobs
  */
-abstract class Job implements JobInterface
+abstract class Job implements JobInterface, RecurringJobInterface, ScheduledJobInterface 
 {
-    use Descriptor;
+    use 
+        Descriptor,
+        Scheduled,
+        Recurring;
 
     /**
      * Unique job id 
@@ -120,6 +128,26 @@ abstract class Job implements JobInterface
     }
 
     /**
+     * Return true if job is due
+     *
+     * @return boolean
+    */
+    public function isDue(): bool
+    {
+        // check for recurring
+        if (empty($this->getRecurringInterval()) == false) {
+            return ($this->getDueDate() <= DateTime::getCurrentTimestamp());
+        }
+       
+        // check for scheduled
+        if (empty($this->getScheduleTime()) == false) {
+            return ($this->scheduleTime <= DateTime::getCurrentTimestamp());
+        }
+
+        return ($this->status == JobInterface::STATUS_PENDING || $this->status == JobInterface::STATUS_CREATED);
+    } 
+
+    /**
      * Get hjob params
      *
      * @return array
@@ -181,16 +209,19 @@ abstract class Job implements JobInterface
     public function toArray(): array
     {
         return [
-            'id'             => $this->getId(),
-            'name'           => $this->getName(),
-            'priority'       => $this->getPriority(),
-            'status'         => $this->getStatus(),
-            'date_executed'  => $this->getDateExecuted(),       
-            'date_created'   => $this->getDateCreated(),          
-            'extension_name' => $this->getExtensionName(),
-            'errors'         => $this->getErrors(),
-            'handler_class'  => \get_class(),
-            'queue'          => $this->getQueue(),
+            'id'                => $this->getId(),
+            'name'              => $this->getName(),
+            'priority'          => $this->getPriority(),
+            'status'            => $this->getStatus(),
+            'date_executed'     => $this->getDateExecuted(),       
+            'date_created'      => $this->getDateCreated(),          
+            'extension_name'    => $this->getExtensionName(),
+            'errors'            => $this->getErrors(),
+            'handler_class'     => \get_class(),
+            'queue'             => $this->getQueue(),
+            'recuring_interval' => $this->interval ?? null,
+            'next_run_date'     => $this->getDueDate(),
+            'schedule_time'     => $this->scheduleTime ?? null
         ];
     }
 
