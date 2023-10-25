@@ -289,14 +289,18 @@ class QueueManager implements QueueInterface
      * Push job to queue
      *
      * @param string $name  job name or class
-     * @param string|null $extension Extension package name
      * @param array|null $params
+     * @param string|null $extension Extension package name
+     * @param string|null $recuringInterval
+     * @param string|null $scheduleTime
      * @return bool
      */
     public function push(
         string $name, 
         ?array $params = null,
-        ?string $extension = null        
+        ?string $extension = null,
+        ?string $recuringInterval = null,
+        ?int $scheduleTime = null       
     ): bool
     {
         $job = $this->create($name,$params,$extension);
@@ -304,7 +308,7 @@ class QueueManager implements QueueInterface
             return false;
         }
     
-        return $this->addJob($job,$extension,false,null,null,$params);       
+        return $this->addJob($job,$extension,false,$recuringInterval,$scheduleTime,$params);       
     }
 
     /**
@@ -327,7 +331,7 @@ class QueueManager implements QueueInterface
         ?array $config = null
     ): bool
     {             
-        $info = [
+        return $this->driver->addJob([
             'priority'          => $job->getPriority(),
             'name'              => $job->getName(),
             'handler_class'     => \get_class($job),         
@@ -337,9 +341,7 @@ class QueueManager implements QueueInterface
             'schedule_time'     => ($job instanceof ScheduledJobInterface) ? $job->getScheduleTime() : $scheduleTime,
             'config'            => ($config != null) ? \json_encode($config) : null,
             'uuid'              => $job->getId()
-        ];
-
-        return $this->driver->addJob($info);      
+        ]);      
     }
 
     /**

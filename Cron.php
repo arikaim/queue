@@ -113,7 +113,9 @@ class Cron implements WorkerManagerInterface
         $php = (Process::findPhp() === false) ? 'php' : Process::findPhp();
         $command = $php . ' ' . ROOT_PATH . BASE_PATH . '/cli scheduler';  
 
-        return Process::run($command);
+        $result = Process::runShellCommand($command);
+
+        return $result;
     }
 
     /**
@@ -208,7 +210,7 @@ class Cron implements WorkerManagerInterface
      */
     public function getJobs(): array 
     {
-        $output = Process::run('crontab -l -u ' . $this->currentUser);
+        $output = Process::runShellCommand('crontab -l -u ' . $this->currentUser);
       
         $output = (empty($output) == true) ? [] : $output;
         $lines = (\is_array($output) == false) ? \explode("\n",$output) : $output;
@@ -272,8 +274,8 @@ class Cron implements WorkerManagerInterface
         $text = \trim(Arrays::toString($commands));
         if (empty($text) == false) {
             $cmd = 'echo "'. $text .'" | crontab -u ' . $this->currentUser . ' - ';
-            $result = Process::run($cmd);
-            
+            $result = Process::runShellCommand($cmd);
+
             return $result;
         } 
 
@@ -287,7 +289,7 @@ class Cron implements WorkerManagerInterface
      */
     public function removeAll()
     {
-        return Process::run('crontab -r -u ' . $this->currentUser);
+        return Process::runShellCommand('crontab -r -u ' . $this->currentUser);
     }
 
     /**
