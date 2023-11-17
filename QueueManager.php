@@ -239,13 +239,14 @@ class QueueManager implements QueueInterface
     /**
      * Update job config param
      *
+     * @param string $id Job id
      * @param string $key
      * @param mixed $value
      * @return boolean
      */
-    public function updateJobParam(string $key, $value): bool
+    public function updateJobParam($id, string $key, $value): bool
     {
-        return $this->driver->saveOption($key, $value);
+        return $this->driver->saveJobConfigParam($id, $key, $value);
     }
 
     /**
