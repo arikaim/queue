@@ -290,11 +290,12 @@ class QueueManager implements QueueInterface
     /**
      * Get all jobs due
      * 
+     * @param string|null $jobName
      * @return array|null
      */
-    public function getJobsDue(): ?array
+    public function getJobsDue(?string $jobName = null): ?array
     {
-        return $this->driver->getJobsDue();
+        return $this->driver->getJobsDue($jobName);
     }
 
     /**
