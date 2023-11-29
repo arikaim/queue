@@ -23,8 +23,8 @@ trait JobConfigUpdate
      */
     public function updateParam(string $key, $value): bool
     {
-        global $container;
+        global $arikaim;
 
-        return $container->get('queue')->updateJobParam($this->getId(),$key,$value);
+        return $arikaim->get('queue')->updateJobParam($this->getId(),$key,$value);
     }
 }
