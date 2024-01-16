@@ -34,7 +34,7 @@ class QueueManager implements QueueInterface
     /**
      * Queue storage driver
      *
-     * @var QueueStorageInterface
+     * @var QueueStorageInterface|object
      */
     protected $driver;
 
