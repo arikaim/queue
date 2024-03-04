@@ -36,7 +36,7 @@ trait Recurring
     public static function getNextRunDate(string $interval, ?int $dateLastExecution = null)
     {
         $dateLastExecution = empty($dateLastExecution) ? DateTime::getCurrentTimestamp() : $dateLastExecution;       
-        $dateTime = DateTime::create('@' . (string)$dateLastExecution);
+        $dateTime = DateTime::createFromTimestamp($dateLastExecution);
 
         if (CronExpression::isValidExpression($interval) == true) {
             return CronExpression::factory($interval)->getNextRunDate($dateTime,0,false,DateTime::getTimeZoneName())->getTimestamp();
