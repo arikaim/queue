@@ -446,7 +446,10 @@ class QueueManager implements QueueInterface
             if ($job->hasSuccess() == true) {
                 // set status
                 $this->driver->updateExecutionStatus($job);
-            } 
+            } else {
+                // set error status
+                $this->driver->setJobStatus($job->getId(),JobInterface::STATUS_ERROR);
+            }
             
             if (($job instanceof JobLogInterface) && (empty($this->logger) == false)) {
                 $this->logger->info($job->getLogMessage(),['job-name' => $job->getName() ]);
