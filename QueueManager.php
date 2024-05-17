@@ -20,7 +20,6 @@ use Arikaim\Core\Interfaces\Job\ScheduledJobInterface;
 use Arikaim\Core\Interfaces\Job\JobProgressInterface;
 use Arikaim\Core\Interfaces\Job\JobLogInterface;
 use Arikaim\Core\Interfaces\QueueInterface;
-use Arikaim\Core\Interfaces\LoggerInterface;
 use Arikaim\Core\Interfaces\WorkerManagerInterface;
 
 use Closure;
@@ -39,13 +38,6 @@ class QueueManager implements QueueInterface
     protected $driver;
 
     /**
-     * Logger
-     *
-     * @var LoggerInterface|null
-     */
-    protected $logger;
-
-    /**
      * Jobs registry
      *
      * @var object|null
@@ -57,10 +49,9 @@ class QueueManager implements QueueInterface
      *
      * @param QueueStorageInterface $driver
      */
-    public function __construct(QueueStorageInterface $driver, ?LoggerInterface $logger = null)
+    public function __construct(QueueStorageInterface $driver)
     {       
         $this->setDriver($driver);       
-        $this->logger = $logger; 
         $this->jobsRegistry = null;   
     }
 
@@ -431,6 +422,8 @@ class QueueManager implements QueueInterface
     */
     public function executeJob(JobInterface $job, ?Closure $onJobProgress = null, ?Closure $onJobProgressError = null): ?JobInterface
     {
+        global $arikaim;
+
         if ($job instanceof JobProgressInterface) {
             $job->onJobProgress($onJobProgress);
             $job->onJobProgressError($onJobProgressError);
@@ -451,13 +444,13 @@ class QueueManager implements QueueInterface
                 $this->driver->setJobStatus($job->getId(),JobInterface::STATUS_ERROR);
             }
             
-            if (($job instanceof JobLogInterface) && (empty($this->logger) == false)) {
-                $this->logger->info($job->getLogMessage(),['job-name' => $job->getName() ]);
+            if ($job instanceof JobLogInterface) {
+                $arikaim->get('logger')->info($job->getLogMessage(),['job-name' => $job->getName() ]);
             }
         } catch (\Exception $e) {
             $job->addError($e->getMessage());     
-            if (($job instanceof JobLogInterface) && (empty($this->logger) == false)) {              
-                $this->logger->error($e->getMessage(),$job->toArray());                
+            if ($job instanceof JobLogInterface) {              
+                $arikaim->get('logger')->error($e->getMessage(),$job->toArray());                
             } 
         }
       
