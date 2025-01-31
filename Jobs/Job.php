@@ -217,7 +217,7 @@ abstract class Job implements JobInterface, RecurringJobInterface, ScheduledJobI
             'date_created'      => $this->getDateCreated(),          
             'extension_name'    => $this->getExtensionName(),
             'errors'            => $this->getErrors(),
-            'handler_class'     => \get_class(),
+            'handler_class'     => \get_class($this),
             'queue'             => $this->getQueue(),
             'recuring_interval' => $this->interval ?? null,
             'next_run_date'     => $this->getDueDate(),
