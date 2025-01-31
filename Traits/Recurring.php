@@ -22,9 +22,9 @@ trait Recurring
     /**
      * Recuring interval
      *
-     * @var string|null
+     * @var string
      */
-    protected $interval = null;
+    protected $interval = '';
     
     /**
      * Get next run date

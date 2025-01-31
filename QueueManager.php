@@ -85,11 +85,9 @@ class QueueManager implements QueueInterface
         $manager = Factory::createInstance($name,$args);
         if ($manager === null) {
             throw new Exception('Not valid queue worker class',1);
-            return null;
         }
         if (($manager instanceof WorkerManagerInterface) == false) {
             throw new Exception('Not valid queue worker class',1);
-            return null;
         }
 
         return $manager;
