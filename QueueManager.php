@@ -266,6 +266,20 @@ class QueueManager implements QueueInterface
     }
 
     /**
+     * Get user job by name
+     * @param string $name
+     * @param int $userId
+     * @return array|null
+     */
+    public function getUserJob(string $name, int $userId): ?array
+    {
+        return $this->driver->getJobs([
+            'name'    => $name,
+            'user_id' => $userId
+        ]);     
+    }
+
+    /**
      * Get jobs
      *
      * @param array $filter
@@ -295,6 +309,7 @@ class QueueManager implements QueueInterface
      * @param string|null $extension Extension package name
      * @param string|null $recuringInterval
      * @param string|null $scheduleTime
+     * @param int|null $userId
      * @return bool
      */
     public function push(
@@ -302,7 +317,8 @@ class QueueManager implements QueueInterface
         ?array $params = null,
         ?string $extension = null,
         ?string $recuringInterval = null,
-        ?int $scheduleTime = null       
+        ?int $scheduleTime = null,
+        ?int $userId = null       
     ): bool
     {
         $job = $this->create($name,$params,$extension);
@@ -310,7 +326,15 @@ class QueueManager implements QueueInterface
             return false;
         }
     
-        return $this->addJob($job,$extension,false,$recuringInterval,$scheduleTime,$params);       
+        return $this->addJob(
+            $job,
+            $extension,
+            false,
+            $recuringInterval,
+            $scheduleTime,
+            $params,
+            $userId
+        );       
     }
 
     /**
@@ -322,6 +346,7 @@ class QueueManager implements QueueInterface
      * @param string|null $recuringInterval
      * @param int|null $scheduleTime
      * @param array|null $config
+     * @param int|null $userId
      * @return bool
      */
     public function addJob(
@@ -330,7 +355,8 @@ class QueueManager implements QueueInterface
         bool $disabled = false,
         ?string $recuringInterval = null,
         ?int $scheduleTime = null,
-        ?array $config = null
+        ?array $config = null,
+        ?int $userId = null
     ): bool
     {             
         if (empty($scheduleTime) == true) {
@@ -350,7 +376,8 @@ class QueueManager implements QueueInterface
             'recuring_interval' => $recuringInterval,
             'schedule_time'     => $scheduleTime,
             'config'            => ($config != null) ? \json_encode($config) : null,
-            'uuid'              => $job->getId()
+            'uuid'              => $job->getId(),
+            'user_id'           => (empty($userId) == true) ? null : $userId
         ]);      
     }
 
